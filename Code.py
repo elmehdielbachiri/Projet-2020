@@ -80,7 +80,7 @@ class TimeCNN(nn.Module):
 
 xmin, xmax = 100.0, -100.0
 vnorm = 1000.0
-minlen = 8
+minlen = 15000
 # if <8 then layer1 outputs L=7/2=3 which fails because layer2 needs L>=4
 #on applique le modele a une seule entree pour voir ce qu'il faut adapter dans un premier lieu
 si2X, si2Y = [], []
@@ -89,6 +89,7 @@ seq=GetTimeseries(names[0],directions[0])[2]
 dsi2X, dsi2Y = [], []
 xlist, ylist = [], []
 for m in range(minlen, len(seq)-1):
+    print(m)
     xx = [seq[z][1]/vnorm for z in range(m)]
     if max(xx)>xmax: xmax=max(xx)
     if min(xx)<xmin: xmin=min(xx)
