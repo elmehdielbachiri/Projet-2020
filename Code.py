@@ -29,7 +29,7 @@ data.sort_values(['location_name','Direction','Date'],inplace=True)
 data.head()
 
 names=data['location_name'].unique().tolist()
-directions=['SB','NB','WB','EB','None']
+directions=data['Direction'].unique().tolist()
 
 test = data.loc[data.location_name==names[0]][data.Direction==directions[0]]
 
@@ -37,10 +37,13 @@ test = data.loc[data.location_name==names[0]][data.Direction==directions[0]]
 ##location and direction should be strings here
 def GetTimeseries(location,direction):
     tsdata=data.loc[data.location_name==location][data.Direction==direction]
+    tslist=[]
+    for i in range(len(tsdata)):
+        tslist+=[(tsdata['Date'][i],tsdata['Volume'][i])]
     tsdata=pd.Series(np.array(tsdata['Volume']),index=tsdata['Date'])
-    tsdata.plot()
-    plt.show()
-    return tsdata
+    #tsdata.plot()
+    #plt.show()
+    return tsdata,np.array(tsdata),tslist
 
 
 ## First Model CNN
@@ -73,6 +76,32 @@ class TimeCNN(nn.Module):
         out = self.fc3(out)
         return out
 
+
+
+xmin, xmax = 100.0, -100.0
+vnorm = 1000.0
+minlen = 8
+# if <8 then layer1 outputs L=7/2=3 which fails because layer2 needs L>=4
+#on applique le modele a une seule entree pour voir ce qu'il faut adapter dans un premier lieu
+si2X, si2Y = [], []
+#seq here contain only the data
+seq=GetTimeseries(names[0],directions[0])[2]
+dsi2X, dsi2Y = [], []
+xlist, ylist = [], []
+for m in range(minlen, len(seq)-1):
+    xx = [seq[z]/vnorm for z in range(m)]
+    if max(xx)>xmax: xmax=max(xx)
+    if min(xx)<xmin: xmin=min(xx)
+    xlist.append(torch.tensor(xx,dtype=torch.float32))
+    yy = [seq[m+1][1]/vnorm]
+    ylist.append(torch.tensor(yy,dtype=torch.float32))
+    si2X = xlist
+    si2Y= ylist
+    if True: # build evaluation dataset
+        xx = [seq[z][1]/vnorm for z in range(len(seq)-1)]
+        dsi2X = [torch.tensor(xx,dtype=torch.float32)]
+        yy = [seq[len(seq)-1][1]/vnorm]
+        dsi2Y = [torch.tensor(yy,dtype=torch.float32)]
 
 
 
