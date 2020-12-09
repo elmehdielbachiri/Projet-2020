@@ -89,7 +89,7 @@ seq=GetTimeseries(names[0],directions[0])[2]
 dsi2X, dsi2Y = [], []
 xlist, ylist = [], []
 for m in range(minlen, len(seq)-1):
-    xx = [seq[z]/vnorm for z in range(m)]
+    xx = [seq[z][1]/vnorm for z in range(m)]
     if max(xx)>xmax: xmax=max(xx)
     if min(xx)<xmin: xmin=min(xx)
     xlist.append(torch.tensor(xx,dtype=torch.float32))
@@ -106,7 +106,32 @@ for m in range(minlen, len(seq)-1):
 
 
 
-
+mod = TimeCNN()
+loss = torch.nn.MSELoss()
+opt = torch.optim.Adam(mod.parameters(),lr=0.01)
+xlist = si2X
+#if len(xlist)<10:continue
+ylist = si2Y
+idxtr = list(range(len(xlist)))
+for ep in range(5):
+    shuffle(idxtr)
+    lotot=0.
+    mod.train()
+    for j in idxtr:
+        opt.zero_grad()
+        haty = mod(xlist[j].view(1,1,-1))
+        # print("pred %f" % (haty.item()*vnorm))
+        lo = loss(haty,ylist[j].view(1,-1))
+        lotot += lo.item()
+        lo.backward()
+        opt.step()
+        
+# the MSE here is computed on a single sample: so it's highly variable !
+        # to make sense of it, you should average it over at least 1000 (s,i) points
+    mod.eval()
+    haty = mod(dsi2X[0].view(1,1,-1))
+    lo = loss(haty,dsi2Y[0].view(1,-1))
+    print("epoch %d loss %1.9f testMSE %1.9f" % (ep, lotot, lo.item()))
 
 
 
