@@ -37,11 +37,11 @@ test = data.loc[data.location_name==names[0]][data.Direction==directions[0]]
 
 # PARAMETERS:
 # Sliding Step : 2 weeks
-A=24*7
+A=24*14
 # Prediction Window: predict 1 week
 B=24 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
-m = 24*28*2
+m = 24*28
 
 # FOR : A=24*7
 # Prediction Window: predict 1 week
@@ -96,18 +96,18 @@ class TimeCNN(nn.Module):
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3),
+            nn.Conv1d(in_channels=32, out_channels=128, kernel_size=3),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
         
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=64*8, out_features=128)
+        self.fc1 = nn.Linear(in_features=128*8, out_features=B*2)
         self.drop = nn.Dropout2d(0.25)
         #Linear Layer 2
-        self.fc2 = nn.Linear(in_features=128, out_features=64)
+        self.fc2 = nn.Linear(in_features=B*2, out_features=B*2)
         #Linear Layer 3
-        self.fc3 = nn.Linear(in_features=64, out_features=B)
+        self.fc3 = nn.Linear(in_features=B*2, out_features=B)
  
     def forward(self, x):
         out = self.layer1(x)
