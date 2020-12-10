@@ -51,20 +51,26 @@ def GetTimeseries(location,direction):
 class TimeCNN(nn.Module):
     def __init__(self):
         super(TimeCNN, self).__init__()
+        #Convolutional Layer 1
         self.layer1 = nn.Sequential(
             nn.Conv1d(in_channels=1, out_channels=32, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2)
         )
+        #Convolutional layer 2
         self.layer2 = nn.Sequential(
             nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
-        self.fc1 = nn.Linear(in_features=64*8, out_features=128)
+        
+        #Linear Layer 1
+        self.fc1 = nn.Linear(in_features=64*8, out_features=24*7*4*2)
         self.drop = nn.Dropout2d(0.25)
-        self.fc2 = nn.Linear(in_features=128, out_features=32)
-        self.fc3 = nn.Linear(in_features=32, out_features=1)
+        #Linear Layer 2
+        self.fc2 = nn.Linear(in_features=24*7*4*2, out_features=24*7*4)
+        #Linear Layer 3
+        self.fc3 = nn.Linear(in_features=24*7*4, out_features=24*7)
  
     def forward(self, x):
         out = self.layer1(x)
