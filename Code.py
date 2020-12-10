@@ -35,12 +35,13 @@ directions=data['Direction'].unique().tolist()
 test = data.loc[data.location_name==names[0]][data.Direction==directions[0]]
 
 
-# HYPERPARAMETERS:
-# Sliding Step :
-A=24*7
-# Prediction Window:
-B=24*7 #(Maximum 10 jours pour avoir condition relative aux couches B<128*2=256)
-
+# PARAMETERS:
+# Sliding Step : 2 weeks
+A=24
+# Prediction Window: predict 1 week
+B=24 #(Maximum 10 jours pour avoir condition relative aux couches B<128*2=256)
+# Base training window: (8 weeks here)
+m = 24*28
 
 
 #TIMES SERIES avec donnees POUR CHAQUE (Location,Direction,date (donnees chaque heure) 
@@ -63,24 +64,24 @@ class TimeCNN(nn.Module):
         super(TimeCNN, self).__init__()
         #Convolutional Layer 1
         self.layer1 = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=64, kernel_size=3, padding=1),
+            nn.Conv1d(in_channels=1, out_channels=32, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2)
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=3),
+            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
         
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=128*8, out_features=B*4)
+        self.fc1 = nn.Linear(in_features=64*8, out_features=B*2)
         self.drop = nn.Dropout2d(0.25)
         #Linear Layer 2
-        self.fc2 = nn.Linear(in_features=B*4, out_features=B*2)
+        self.fc2 = nn.Linear(in_features=B*2, out_features=B)
         #Linear Layer 3
-        self.fc3 = nn.Linear(in_features=B*2, out_features=B)
+        self.fc3 = nn.Linear(in_features=B, out_features=B)
  
     def forward(self, x):
         out = self.layer1(x)
@@ -96,7 +97,7 @@ class TimeCNN(nn.Module):
 
 xmin, xmax = 100.0, -100.0
 vnorm = 1000.0
-minlen = 24*3*30
+
 # if <8 then layer1 outputs L=7/2=3 which fails because layer2 needs L>=4
 #on applique le modele a une seule entree pour voir ce qu'il faut adapter dans un premier lieu
 si2X, si2Y = [], []
@@ -104,23 +105,22 @@ si2X, si2Y = [], []
 seq=GetTimeseries(names[0],directions[0])[2]
 dsi2X, dsi2Y = [], []
 xlist, ylist = [], []
-m=24*3*30
-print((len(seq)-m)//(24*7)-2)
-for k in range((len(seq)-m)//(24*7)-2):
+print((len(seq)-m//A)-2)
+for k in range(((len(seq)-m-B)//A)-1):
     print(k)
-    xx = [seq[z][1]/vnorm for z in range(k*(24*7),m+k*(24*7))]
+    xx = [seq[z][1]/vnorm for z in range(k*A,m+k*A)]
     if max(xx)>xmax: xmax=max(xx)
     if min(xx)<xmin: xmin=min(xx)
     xlist.append(torch.tensor(xx,dtype=torch.float32))
-    yy = [seq[z][1]/vnorm for z in range(m+k*(24*7),m+(k+1)*(24*7))]
+    yy = [seq[z][1]/vnorm for z in range(m+k*A,m+k*A+B)]
     ylist.append(torch.tensor(yy,dtype=torch.float32))
 si2X = xlist
 si2Y= ylist
 if True: # build evaluation dataset
-    k1=(len(seq)-m)//(24*7)-2
-    xx = [seq[z][1]/vnorm for z in range(k1*(24*7),m+k1*(24*7))]
+    k1=((len(seq)-m-B)//A)-1
+    xx = [seq[z][1]/vnorm for z in range(k1*A,m+k1*A)]
     dsi2X = [torch.tensor(xx,dtype=torch.float32)]
-    yy = [seq[z][1]/vnorm for z in range(m+k1*(24*7),m+(k1+1)*(24*7))]
+    yy = [seq[z][1]/vnorm for z in range(m+k1*A,m+k1*A+B)]
     dsi2Y = [torch.tensor(yy,dtype=torch.float32)]
 
 
