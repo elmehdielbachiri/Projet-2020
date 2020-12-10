@@ -85,6 +85,9 @@ def GetTimeseries(location,direction):
 
 ## First Model CNN
 
+##Trace des localisations des donnes pour voir s'il est judicieux de trainer le modele sur toutes les localisations (s'ils sont assez proches pour avoir des influences l'une sur l'autre)
+
+
 class TimeCNN(nn.Module):
     def __init__(self):
         super(TimeCNN, self).__init__()
