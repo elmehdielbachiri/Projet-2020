@@ -106,7 +106,7 @@ class TimeCNN(nn.Module):
         self.drop = nn.Dropout2d(0.25)
         #Linear Layer 2
         self.fc2 = nn.Linear(in_features=B*2, out_features=B*2)
-        #Linear Layer 3
+        #Linear Layer 3 (USEFUL OR NOT ? 2 linear layers are useful)
         self.fc3 = nn.Linear(in_features=B*2, out_features=B)
  
     def forward(self, x):
@@ -142,7 +142,8 @@ for k in range(((len(seq)-m-B)//A)-1):
     ylist.append(torch.tensor(yy,dtype=torch.float32))
 si2X = xlist
 si2Y= ylist
-if True: # build evaluation dataset
+# Test set
+if True: # build evaluation dataset 10% 
     k1=((len(seq)-m-B)//A)-1
     xx = [seq[z][1]/vnorm for z in range(k1*A,m+k1*A)]
     dsi2X = [torch.tensor(xx,dtype=torch.float32)]
@@ -180,7 +181,7 @@ for ep in range(20):
     print("epoch %d loss %1.9f testMSE %1.9f" % (ep, lotot, lo.item()))
 
 
-
+## TEST both of them (B=24)/ (B=1)
 
 ## Second model LSTM 
 
