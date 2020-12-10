@@ -9,6 +9,7 @@ import pandas as pd
 from random import shuffle
 import matplotlib.pyplot as plt
 
+
 data = pd.read_csv('/Users/mac/Desktop/Projet Machine Learning/Data/Radar_Traffic_Counts.csv',sep=',') 
 
 data.drop(['Time Bin'],axis=1,inplace=True)
@@ -33,6 +34,15 @@ directions=data['Direction'].unique().tolist()
 
 test = data.loc[data.location_name==names[0]][data.Direction==directions[0]]
 
+
+# HYPERPARAMETERS:
+# Sliding Step :
+A=24*7
+# Prediction Window:
+B=24*7 #(Maximum 10 jours pour avoir condition relative aux couches B<128*2=256)
+
+
+
 #TIMES SERIES avec donnees POUR CHAQUE (Location,Direction,date (donnees chaque heure) 
 ##location and direction should be strings here
 def GetTimeseries(location,direction):
@@ -53,24 +63,24 @@ class TimeCNN(nn.Module):
         super(TimeCNN, self).__init__()
         #Convolutional Layer 1
         self.layer1 = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=32, kernel_size=3, padding=1),
+            nn.Conv1d(in_channels=1, out_channels=64, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2)
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3),
+            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=3),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
         
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=64*8, out_features=24*7*4*2)
+        self.fc1 = nn.Linear(in_features=128*8, out_features=B*4)
         self.drop = nn.Dropout2d(0.25)
         #Linear Layer 2
-        self.fc2 = nn.Linear(in_features=24*7*4*2, out_features=24*7*4)
+        self.fc2 = nn.Linear(in_features=B*4, out_features=B*2)
         #Linear Layer 3
-        self.fc3 = nn.Linear(in_features=24*7*4, out_features=24*7)
+        self.fc3 = nn.Linear(in_features=B*2, out_features=B)
  
     def forward(self, x):
         out = self.layer1(x)
@@ -94,21 +104,24 @@ si2X, si2Y = [], []
 seq=GetTimeseries(names[0],directions[0])[2]
 dsi2X, dsi2Y = [], []
 xlist, ylist = [], []
-for m in range(minlen, len(seq)-24*7-1):
-    print(m)
-    xx = [seq[z][1]/vnorm for z in range(m)]
+m=24*3*30
+print((len(seq)-m)//(24*7)-2)
+for k in range((len(seq)-m)//(24*7)-2):
+    print(k)
+    xx = [seq[z][1]/vnorm for z in range(k*(24*7),m+k*(24*7))]
     if max(xx)>xmax: xmax=max(xx)
     if min(xx)<xmin: xmin=min(xx)
     xlist.append(torch.tensor(xx,dtype=torch.float32))
-    yy = [seq[m+k][1]/vnorm for k in range(24*7)]
+    yy = [seq[z][1]/vnorm for z in range(m+k*(24*7),m+(k+1)*(24*7))]
     ylist.append(torch.tensor(yy,dtype=torch.float32))
-    si2X = xlist
-    si2Y= ylist
-    if True: # build evaluation dataset
-        xx = [seq[z][1]/vnorm for z in range(len(seq)-24*7-1)]
-        dsi2X = [torch.tensor(xx,dtype=torch.float32)]
-        yy = [seq[len(seq)-24*7-1+i][1]/vnorm for i in range(24*7)]
-        dsi2Y = [torch.tensor(yy,dtype=torch.float32)]
+si2X = xlist
+si2Y= ylist
+if True: # build evaluation dataset
+    k1=(len(seq)-m)//(24*7)-2
+    xx = [seq[z][1]/vnorm for z in range(k1*(24*7),m+k1*(24*7))]
+    dsi2X = [torch.tensor(xx,dtype=torch.float32)]
+    yy = [seq[z][1]/vnorm for z in range(m+k1*(24*7),m+(k1+1)*(24*7))]
+    dsi2Y = [torch.tensor(yy,dtype=torch.float32)]
 
 
 
@@ -120,7 +133,7 @@ xlist = si2X
 #if len(xlist)<10:continue
 ylist = si2Y
 idxtr = list(range(len(xlist)))
-for ep in range(5):
+for ep in range(20):
     shuffle(idxtr)
     lotot=0.
     mod.train()
