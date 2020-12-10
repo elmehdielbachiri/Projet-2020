@@ -126,6 +126,13 @@ vnorm = 1000.0
 
 # if <8 then layer1 outputs L=7/2=3 which fails because layer2 needs L>=4
 #on applique le modele a une seule entree pour voir ce qu'il faut adapter dans un premier lieu
+
+#revoir la normalisation -mean()/max(seq) on all data Module pour normaliser les donner
+# Correlation entre Localisations ?
+# Prediction de toutes les localisations et directions en meme temps (chaque elements du vecteur correspond a une prediction) 
+
+## (chaque propriete prendre en compte les patterns  )
+
 si2X, si2Y = [], []
 #seq here contain only the data
 seq=GetTimeseries(names[0],directions[0])[2]
@@ -181,7 +188,9 @@ for ep in range(20):
     print("epoch %d loss %1.9f testMSE %1.9f" % (ep, lotot, lo.item()))
 
 
-## TEST both of them (B=24)/ (B=1)
+## Train on both of them (B=24)/(B=1) and Pourcentage au lieu de mean squared error
+
+## Advanced CNN model
 
 ## Second model LSTM 
 
