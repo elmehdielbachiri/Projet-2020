@@ -36,12 +36,12 @@ test = data.loc[data.location_name==names[0]][data.Direction==directions[0]]
 
 
 # PARAMETERS:
-# Sliding Step : 2 weeks
+# Sliding Step : 2 weeks 
 A=1
 # Prediction Window: predict 1 week
-B=24 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
+B=1 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
-m = 24*28
+m = 14
 
 # FOR : A=24*7
 # Prediction Window: predict 1 week
@@ -169,7 +169,7 @@ xlist = si2X
 #if len(xlist)<10:continue
 ylist = si2Y
 idxtr = list(range(len(xlist)))
-for ep in range(20):
+for ep in range(50):
     shuffle(idxtr)
     lotot=0.
     mod.train()
