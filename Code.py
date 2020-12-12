@@ -46,11 +46,11 @@ for i in range(len(newcouple)):
 
 # PARAMETERS:
 # Sliding Step : 2 weeks 
-A=24*14
+A=24*3
 # Prediction Window: predict 1 week
 B=24*7 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
-m =24*56
+m =24*28*2
 
 # FOR A=1,B=1,m=24*7
 # epoch 0 loss in training 0.042862428  loss in test 0.034414649
@@ -82,23 +82,22 @@ class TimeCNN(nn.Module):
         super(TimeCNN, self).__init__()
         #Convolutional Layer 1
         self.layer1 = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=64, kernel_size=5, padding=1),
+            nn.Conv1d(in_channels=1, out_channels=64*16, kernel_size=5, padding=1),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=5, stride=2)
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=5),
+            nn.Conv1d(in_channels=64*16, out_channels=64*16*16, kernel_size=5),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
         
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=128*8, out_features=256*4)
+        self.fc1 = nn.Linear(in_features=64*16*16*8, out_features=64*16)
         #Linear Layer 2
-        self.drop=nn.Dropout2d(0.25)
-        self.fc2 = nn.Linear(in_features=256*4, out_features=256*2)
-        self.fc3 = nn.Linear(in_features=256*2, out_features=24*7)
+        self.drop=nn.Dropout2d(0.2)
+        self.fc2 = nn.Linear(in_features=64*16, out_features=24*7)
  
     def forward(self, x):
         out = self.layer1(x)
@@ -107,7 +106,6 @@ class TimeCNN(nn.Module):
         out = self.fc1(out)
         out=self.drop(out)
         out = self.fc2(out)
-        out = self.fc3(out)
         return out
 
 
@@ -158,7 +156,7 @@ for key in keys:
     
     mod = TimeCNN()
     loss = torch.nn.MSELoss()
-    opt = torch.optim.Adam(mod.parameters(),lr=0.0005)
+    opt = torch.optim.Adam(mod.parameters(),lr=0.001)
     xlist = si2X
     #if len(xlist)<10:continue
     ylist = si2Y
@@ -189,10 +187,13 @@ for key in keys:
     del(mod)
     
 
-## Train on both of them (B=24)/(B=1) and Pourcentage au lieu de mean squared error
+## Train on both of them (B=24)/(B=1) and Pourcentage au lieu de mean squared error take test set rndomly as well
+
 
 ## second CNN model
-    
+
+# FIRST STEP CLUSTERING OF CLOSE ELEMENTS TOGETHER
+
 
 ## Second model LSTM 
 
