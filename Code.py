@@ -37,7 +37,7 @@ test = data.loc[data.location_name==names[0]][data.Direction==directions[0]]
 
 # PARAMETERS:
 # Sliding Step : 2 weeks
-A=24*14
+A=1
 # Prediction Window: predict 1 week
 B=24 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
@@ -153,12 +153,11 @@ for k in range(((len(seq)-m-B)//A)-1):
 si2X = xlist
 si2Y= ylist
 # Test set
-if True: # build evaluation dataset 10% 
-    k1=((len(seq)-m-B)//A)-1
+for k1 in range(((len(seq)-m-B)//A)-1-int(0.1*((len(seq))//A)),((len(seq)-m-B)//A)-1): # build evaluation dataset 10% 
     xx = [seq[z][1]/vnorm for z in range(k1*A,m+k1*A)]
-    dsi2X = [torch.tensor(xx,dtype=torch.float32)]
+    dsi2X.append([torch.tensor(xx,dtype=torch.float32)])
     yy = [seq[z][1]/vnorm for z in range(m+k1*A,m+k1*A+B)]
-    dsi2Y = [torch.tensor(yy,dtype=torch.float32)]
+    dsi2Y.append([torch.tensor(yy,dtype=torch.float32)])
 
 
 
@@ -186,9 +185,12 @@ for ep in range(20):
 # the MSE here is computed on a single sample: so it's highly variable !
         # to make sense of it, you should average it over at least 1000 (s,i) points
     mod.eval()
-    haty = mod(dsi2X[0].view(1,1,-1))
-    lo = loss(haty,dsi2Y[0].view(1,-1))
-    print("epoch %d loss %1.9f testMSE %1.9f" % (ep, lotot, lo.item()))
+    lotestset=0
+    for i in range(len(dsi2X)):
+        haty = mod(dsi2X[i][0].view(1,1,-1))
+        lo = loss(haty,dsi2Y[i][0].view(1,-1))
+        lotestset+= lo.item()
+    print("epoch %d loss in training %1.9f  loss in test %1.9f" % (ep, lotot/len(xlist), lotestset/len(dsi2X)))
 
 
 ## Train on both of them (B=24)/(B=1) and Pourcentage au lieu de mean squared error
