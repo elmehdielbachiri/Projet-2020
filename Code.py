@@ -142,7 +142,7 @@ seq=GetTimeseries(names[0],directions[0])[2]
 dsi2X, dsi2Y = [], []
 xlist, ylist = [], []
 print((len(seq)-m//A)-2)
-for k in range(((len(seq)-m-B)//A)-1):
+for k in range(((len(seq)-m-B)//A)-1-int(0.1*((len(seq))//A))):
     print(k)
     xx = [seq[z][1]/vnorm for z in range(k*A,m+k*A)]
     if max(xx)>xmax: xmax=max(xx)
