@@ -88,17 +88,17 @@ class TimeCNN(nn.Module):
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=64, out_channels=512, kernel_size=5),
+            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=5),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
         
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=512*2*8, out_features=256*4)
+        self.fc1 = nn.Linear(in_features=128*8, out_features=256*4)
         #Linear Layer 2
         self.drop=nn.Dropout2d(0.25)
         self.fc2 = nn.Linear(in_features=256*4, out_features=256*2)
-        self.fc2 = nn.Linear(in_features=256*2, out_features=24*7)
+        self.fc3 = nn.Linear(in_features=256*2, out_features=24*7)
  
     def forward(self, x):
         out = self.layer1(x)
@@ -107,6 +107,7 @@ class TimeCNN(nn.Module):
         out = self.fc1(out)
         out=self.drop(out)
         out = self.fc2(out)
+        out = self.fc3(out)
         return out
 
 
@@ -157,7 +158,7 @@ for key in keys:
     
     mod = TimeCNN()
     loss = torch.nn.MSELoss()
-    opt = torch.optim.Adam(mod.parameters(),lr=0.00001)
+    opt = torch.optim.Adam(mod.parameters(),lr=0.0005)
     xlist = si2X
     #if len(xlist)<10:continue
     ylist = si2Y
@@ -183,7 +184,7 @@ for key in keys:
             haty = mod(dsi2X[i][0].view(1,1,-1))
             lo = loss(haty,dsi2Y[i][0].view(1,-1))
             lotestset+= lo.item()
-        if ep//20==0:
+        if ep%20==0:
             print("epoch %d loss in training %1.9f  loss in test %1.9f" % (ep, lotot, lotestset))
     del(mod)
     
