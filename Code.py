@@ -34,6 +34,16 @@ directions=data['Direction'].unique().tolist()
 
 test = data.loc[data.location_name==names[0]][data.Direction==directions[0]]
 
+newdata=data
+couple=newdata.groupby(by=['location_name'],as_index=False)['Volume'].count()
+#Pour avoir assez d'entrees
+newcouple=couple[couple['Volume']>10000].reset_index()
+keys=[]
+for i in range(len(newcouple)):
+    key=(newcouple['location_name'][i],newcouple['Direction'][i])
+    keys.append(key)
+    
+
 
 # PARAMETERS:
 # Sliding Step : 2 weeks 
@@ -41,33 +51,15 @@ A=1
 # Prediction Window: predict 1 week
 B=1 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
-m = 14
+m =24*7
 
-# FOR : A=24*7
-# Prediction Window: predict 1 week
-# B=24 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
-# Base training window: (8 weeks here)
-# m = 24*28*2
-# epoch 0 loss 13.663952358 testMSE 0.036261350
-# epoch 1 loss 11.580940861 testMSE 0.106750794
-# epoch 2 loss 11.368167730 testMSE 0.053207424
-# epoch 3 loss 12.217421100 testMSE 0.059360106
-# epoch 4 loss 11.638190819 testMSE 0.018149979
-# epoch 5 loss 11.520276275 testMSE 0.058282465
-# epoch 6 loss 11.319544181 testMSE 0.039052293
-# epoch 7 loss 11.287821383 testMSE 0.053247068
-# epoch 8 loss 11.165210446 testMSE 0.075795271
-# epoch 9 loss 11.256984541 testMSE 0.036187522
-# epoch 10 loss 11.282688415 testMSE 0.051304504
-# epoch 11 loss 11.216889381 testMSE 0.056534965
-# epoch 12 loss 11.033790175 testMSE 0.048409667
-# epoch 13 loss 11.458225170 testMSE 0.064952679
-# epoch 14 loss 11.130934507 testMSE 0.031871408
-# epoch 15 loss 12.486707686 testMSE 0.042964790
-# epoch 16 loss 12.092693646 testMSE 0.036532227
-# epoch 17 loss 11.621955955 testMSE 0.063966967
-# epoch 18 loss 11.553644409 testMSE 0.046707377
-# epoch 19 loss 11.023357280 testMSE 0.061495472 
+# FOR A=1,B=1,m=24*7
+# epoch 0 loss in training 0.042862428  loss in test 0.034414649
+# epoch 1 loss in training 0.042459846  loss in test 0.034374041
+# epoch 2 loss in training 0.042413600  loss in test 0.034949515
+# epoch 3 loss in training 0.042598883  loss in test 0.035271741
+# epoch 4 loss in training 0.042557107  loss in test 0.035366366
+
 
 
 #TIMES SERIES avec donnees POUR CHAQUE (Location,Direction,date (donnees chaque heure) 
@@ -99,18 +91,18 @@ class TimeCNN(nn.Module):
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=32, out_channels=128, kernel_size=3),
+            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
         
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=128*8, out_features=B*2)
+        self.fc1 = nn.Linear(in_features=64*8, out_features=128)
         self.drop = nn.Dropout2d(0.25)
         #Linear Layer 2
-        self.fc2 = nn.Linear(in_features=B*2, out_features=B*2)
+        self.fc2 = nn.Linear(in_features=128, out_features=32)
         #Linear Layer 3 (USEFUL OR NOT ? 2 linear layers are useful)
-        self.fc3 = nn.Linear(in_features=B*2, out_features=B)
+        self.fc3 = nn.Linear(in_features=32, out_features=B)
  
     def forward(self, x):
         out = self.layer1(x)
@@ -124,8 +116,7 @@ class TimeCNN(nn.Module):
 
 
 
-xmin, xmax = 100.0, -100.0
-vnorm = 1000.0
+
 
 # if <8 then layer1 outputs L=7/2=3 which fails because layer2 needs L>=4
 #on applique le modele a une seule entree pour voir ce qu'il faut adapter dans un premier lieu
@@ -136,27 +127,36 @@ vnorm = 1000.0
 
 ## (chaque propriete prendre en compte les patterns  )
 
+
+DIC={}
+for i in range(len(keys)):
+    DIC[keys[i]]=GetTimeseries(keys[i][0],keys[i][1])[1]
+
+
+
+seq=GetTimeseries(names[0],directions[0])[1]
 si2X, si2Y = [], []
 #seq here contain only the data
-seq=GetTimeseries(names[0],directions[0])[2]
+vnorm = max(seq)
+ME=np.mean(seq)
 dsi2X, dsi2Y = [], []
 xlist, ylist = [], []
 print((len(seq)-m//A)-2)
-for k in range(((len(seq)-m-B)//A)-1-int(0.1*((len(seq))//A))):
+for k in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A))):
     print(k)
-    xx = [seq[z][1]/vnorm for z in range(k*A,m+k*A)]
+    xx = [(seq[z]-ME)/vnorm for z in range(k*A,m+k*A)]
     if max(xx)>xmax: xmax=max(xx)
     if min(xx)<xmin: xmin=min(xx)
     xlist.append(torch.tensor(xx,dtype=torch.float32))
-    yy = [seq[z][1]/vnorm for z in range(m+k*A,m+k*A+B)]
+    yy = [(seq[z]-ME)/vnorm for z in range(m+k*A,m+k*A+B)]
     ylist.append(torch.tensor(yy,dtype=torch.float32))
 si2X = xlist
 si2Y= ylist
 # Test set
-for k1 in range(((len(seq)-m-B)//A)-1-int(0.1*((len(seq))//A)),((len(seq)-m-B)//A)-1): # build evaluation dataset 10% 
-    xx = [seq[z][1]/vnorm for z in range(k1*A,m+k1*A)]
+for k1 in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A)),((len(seq)-m-B)//A)-1): # build evaluation dataset 10% 
+    xx = [(seq[z]-ME)/vnorm for z in range(k1*A,m+k1*A)]
     dsi2X.append([torch.tensor(xx,dtype=torch.float32)])
-    yy = [seq[z][1]/vnorm for z in range(m+k1*A,m+k1*A+B)]
+    yy = [(seq[z]-ME)/vnorm for z in range(m+k1*A,m+k1*A+B)]
     dsi2Y.append([torch.tensor(yy,dtype=torch.float32)])
 
 
@@ -164,7 +164,7 @@ for k1 in range(((len(seq)-m-B)//A)-1-int(0.1*((len(seq))//A)),((len(seq)-m-B)//
 
 mod = TimeCNN()
 loss = torch.nn.MSELoss()
-opt = torch.optim.Adam(mod.parameters(),lr=0.01)
+opt = torch.optim.Adam(mod.parameters(),lr=0.005)
 xlist = si2X
 #if len(xlist)<10:continue
 ylist = si2Y
@@ -190,7 +190,7 @@ for ep in range(50):
         haty = mod(dsi2X[i][0].view(1,1,-1))
         lo = loss(haty,dsi2Y[i][0].view(1,-1))
         lotestset+= lo.item()
-    print("epoch %d loss in training %1.9f  loss in test %1.9f" % (ep, lotot/len(xlist), lotestset/len(dsi2X)))
+    print("epoch %d loss in training %1.9f  loss in test %1.9f" % (ep, lotot, lotestset))
 
 
 ## Train on both of them (B=24)/(B=1) and Pourcentage au lieu de mean squared error
