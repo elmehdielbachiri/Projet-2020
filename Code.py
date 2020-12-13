@@ -19,13 +19,14 @@ data.drop('Day',axis=1,inplace=True)
 data.drop('Hour',axis=1,inplace=True)
 data.drop('Minute',axis=1,inplace=True)
 data.drop('Day of Week',axis=1,inplace=True)
-data.drop('location_longitude',axis=1,inplace=True)
-data.drop('location_latitude',axis=1,inplace=True)
 
+
+#data.drop('location_longitude',axis=1,inplace=True)
+#data.drop('location_latitude',axis=1,inplace=True)
 
 data[['Year']]=pd.to_datetime(date1,unit='D')
 data=data.rename(columns={'Year':'Date'})
-data=data.groupby(by=['location_name','Direction','Date'],as_index=False)['Volume'].sum()
+data=data.groupby(by=['location_name','Direction','location_latitude','location_longitude','Date'],as_index=False)['Volume'].sum()
 data.sort_values(['location_name','Direction','Date'],inplace=True)
 data.head()
 
@@ -34,6 +35,7 @@ directions=data['Direction'].unique().tolist()
 
 test = data.loc[data.location_name==names[0]][data.Direction==directions[0]]
 
+COORDdata=data.groupby(by=['location_name','location_latitude','location_longitude','Direction'],as_index=False)['Volume'].count()
 couple=data.groupby(by=['location_name','Direction'],as_index=False)['Volume'].count()
 #Pour avoir assez d'entrees
 newcouple=couple[couple['Volume']>10000].reset_index()
@@ -42,6 +44,10 @@ for i in range(len(newcouple)):
     key=(newcouple['location_name'][i],newcouple['Direction'][i])
     keys.append(key)
     
+# After trying a first approach on univariate time that didn't seem to give great results, my second approach consists of defining a model over a multivariate time series (multiple couples (location,Direction) since close locations can have influences on each other in traffic volume)
+
+## First Step : Determining Close Locations based on Longitude and Latitude
+
 
 
 # PARAMETERS:
