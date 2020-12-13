@@ -82,7 +82,7 @@ L=[3,4,6,10]
 R=[8,4,2,20]
 rate=[0.1,0.01,0.001,0.002,0.0001,0.00001]
 
-for kn in range(K):
+for kn in range(len(K)):
     for ln in L:
         for rn in R:
             for ratee in rate:
@@ -142,7 +142,7 @@ for kn in range(K):
                 
                 
                 
-                seq=DIC[key[0]]
+                seq=DIC[keys[0]]
                 print(key)
                 seq=GetTimeseries(names[0],directions[0])
                 si2X, si2Y = [], []
