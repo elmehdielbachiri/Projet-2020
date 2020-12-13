@@ -76,117 +76,129 @@ def GetTimeseries(location,direction):
 
 ##Trace des localisations des donnes pour voir s'il est judicieux de trainer le modele sur toutes les localisations (s'ils sont assez proches pour avoir des influences l'une sur l'autre)
 
+K=[8,10,15,30,50,68,128,250]
+J=[32,50,63,69,100,140,200,512]
+L=[3,4,6,10]
+R=[8,4,2,20]
+rate=[0.1,0.01,0.001,0.002,0.0001,0.00001]
 
-class TimeCNN(nn.Module):
-    def __init__(self):
-        super(TimeCNN, self).__init__()
-        #Convolutional Layer 1
-        self.layer1 = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=64*16, kernel_size=5, padding=1),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=5, stride=2)
-        )
-        #Convolutional layer 2
-        self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=64*16, out_channels=64*16*16, kernel_size=5),
-            nn.ReLU(),
-            nn.AdaptiveMaxPool1d(8)
-        )
-
-## Try to add convolutinal layers ?        
-        #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=64*16*16*8, out_features=64*16)
-        #Linear Layer 2
-        self.drop=nn.Dropout2d(0.2)
-        self.fc2 = nn.Linear(in_features=64*16, out_features=24*7)
- 
-    def forward(self, x):
-        out = self.layer1(x)
-        out = self.layer2(out)
-        out = out.view(out.size(0), -1)
-        out = self.fc1(out)
-        out=self.drop(out)
-        out = self.fc2(out)
-        return out
-
-
-
-
-
-# if <8 then layer1 outputs L=7/2=3 which fails because layer2 needs L>=4
-#on applique le modele a une seule entree pour voir ce qu'il faut adapter dans un premier lieu
-
-#revoir la normalisation -mean()/max(seq) on all data Module pour normaliser les donner
-# Correlation entre Localisations ?
-# Prediction de toutes les localisations et directions en meme temps (chaque elements du vecteur correspond a une prediction) 
-
-## (chaque propriete prendre en compte les patterns  )
-
-
-DIC={}
-for i in range(len(keys)):
-    DIC[keys[i]]=GetTimeseries(keys[i][0],keys[i][1])
-
-
-for key in keys:
-    seq=DIC[key]
-    print(key)
-    seq=GetTimeseries(names[0],directions[0])
-    si2X, si2Y = [], []
-    #seq here contain only the data
-    vnorm = max(seq)-min(seq)
-    ME=np.mean(seq)
-    dsi2X, dsi2Y = [], []
-    xlist, ylist = [], []
-    for k in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A))):
-        xx = [(seq[z]-ME)/vnorm for z in range(k*A,m+k*A)]
-        xlist.append(torch.tensor(xx,dtype=torch.float32))
-        yy = [(seq[z]-ME)/vnorm for z in range(m+k*A,m+k*A+B)]
-        ylist.append(torch.tensor(yy,dtype=torch.float32))
-    si2X = xlist
-    si2Y= ylist
-    # Test set
-    for k1 in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A)),((len(seq)-m-B)//A)-1): # build evaluation dataset 10% 
-        xx = [(seq[z]-ME)/vnorm for z in range(k1*A,m+k1*A)]
-        dsi2X.append([torch.tensor(xx,dtype=torch.float32)])
-        yy = [(seq[z]-ME)/vnorm for z in range(m+k1*A,m+k1*A+B)]
-        dsi2Y.append([torch.tensor(yy,dtype=torch.float32)])
-    
-    
-    
-    
-    mod = TimeCNN()
-    loss = torch.nn.MSELoss()
-    opt = torch.optim.Adam(mod.parameters(),lr=0.001)
-    xlist = si2X
-    #if len(xlist)<10:continue
-    ylist = si2Y
-    idxtr = list(range(len(xlist)))
-    for ep in range(200):
-        shuffle(idxtr)
-        lotot=0.
-        mod.train()
-        for j in idxtr:
-            opt.zero_grad()
-            haty = mod(xlist[j].view(1,1,-1))
-            # print("pred %f" % (haty.item()*vnorm))
-            lo = loss(haty,ylist[j].view(1,-1))
-            lotot += lo.item()
-            lo.backward()
-            opt.step()
-            
-    # the MSE here is computed on a single sample: so it's highly variable !
-            # to make sense of it, you should average it over at least 1000 (s,i) points
-        mod.eval()
-        lotestset=0
-        for i in range(len(dsi2X)):
-            haty = mod(dsi2X[i][0].view(1,1,-1))
-            lo = loss(haty,dsi2Y[i][0].view(1,-1))
-            lotestset+= lo.item()
-        if ep%20==0:
-            print("epoch %d loss in training %1.9f  loss in test %1.9f" % (ep, lotot, lotestset))
-    del(mod)
-    
+for kn in range(K):
+    for ln in L:
+        for rn in R:
+            for ratee in rate:
+                print(K[kn],J[kn],ln,rn,ratee)
+                class TimeCNN(nn.Module):
+                    def __init__(self):
+                        super(TimeCNN, self).__init__()
+                        #Convolutional Layer 1
+                        self.layer1 = nn.Sequential(
+                            nn.Conv1d(in_channels=1, out_channels=K[kn], kernel_size=ln, padding=1),
+                            nn.ReLU(),
+                            nn.MaxPool1d(kernel_size=ln, stride=2)
+                        )
+                        #Convolutional layer 2
+                        self.layer2 = nn.Sequential(
+                            nn.Conv1d(in_channels=K[kn], out_channels=J[kn], kernel_size=ln),
+                            nn.ReLU(),
+                            nn.AdaptiveMaxPool1d(rn)
+                        )
+                
+                ## Try to add convolutinal layers ?        
+                        #Linear Layer 1
+                        self.fc1 = nn.Linear(in_features=rn*J[kn], out_features=64*4)
+                        #Linear Layer 2
+                        self.drop=nn.Dropout2d(0.2)
+                        self.fc2 = nn.Linear(in_features=64*4, out_features=64*3)
+                        self.fc3 = nn.Linear(in_features=64*3, out_features=24*7)
+                
+                    def forward(self, x):
+                        out = self.layer1(x)
+                        out = self.layer2(out)
+                        out = out.view(out.size(0), -1)
+                        out = self.fc1(out)
+                        out=self.drop(out)
+                        out = self.fc2(out)
+                        out=self.fc3(out)
+                        return out
+                
+                
+                
+                
+                
+                # if <8 then layer1 outputs L=7/2=3 which fails because layer2 needs L>=4
+                #on applique le modele a une seule entree pour voir ce qu'il faut adapter dans un premier lieu
+                
+                #revoir la normalisation -mean()/max(seq) on all data Module pour normaliser les donner
+                # Correlation entre Localisations ?
+                # Prediction de toutes les localisations et directions en meme temps (chaque elements du vecteur correspond a une prediction) 
+                
+                ## (chaque propriete prendre en compte les patterns  )
+                
+                
+                DIC={}
+                for i in range(len(keys)):
+                    DIC[keys[i]]=GetTimeseries(keys[i][0],keys[i][1])
+                
+                
+                
+                
+                seq=DIC[key[0]]
+                print(key)
+                seq=GetTimeseries(names[0],directions[0])
+                si2X, si2Y = [], []
+                #seq here contain only the data
+                vnorm = max(seq)-min(seq)
+                ME=np.mean(seq)
+                dsi2X, dsi2Y = [], []
+                xlist, ylist = [], []
+                for k in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A))):
+                    xx = [(seq[z]-ME)/vnorm for z in range(k*A,m+k*A)]
+                    xlist.append(torch.tensor(xx,dtype=torch.float32))
+                    yy = [(seq[z]-ME)/vnorm for z in range(m+k*A,m+k*A+B)]
+                    ylist.append(torch.tensor(yy,dtype=torch.float32))
+                si2X = xlist
+                si2Y= ylist
+                # Test set
+                for k1 in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A)),((len(seq)-m-B)//A)-1): # build evaluation dataset 10% 
+                    xx = [(seq[z]-ME)/vnorm for z in range(k1*A,m+k1*A)]
+                    dsi2X.append([torch.tensor(xx,dtype=torch.float32)])
+                    yy = [(seq[z]-ME)/vnorm for z in range(m+k1*A,m+k1*A+B)]
+                    dsi2Y.append([torch.tensor(yy,dtype=torch.float32)])
+                
+                
+                
+                
+                mod = TimeCNN()
+                loss = torch.nn.MSELoss()
+                opt = torch.optim.Adam(mod.parameters(),lr=ratee)
+                xlist = si2X
+                #if len(xlist)<10:continue
+                ylist = si2Y
+                idxtr = list(range(len(xlist)))
+                for ep in range(200):
+                    shuffle(idxtr)
+                    lotot=0.
+                    mod.train()
+                    for j in idxtr:
+                        opt.zero_grad()
+                        haty = mod(xlist[j].view(1,1,-1))
+                        # print("pred %f" % (haty.item()*vnorm))
+                        lo = loss(haty,ylist[j].view(1,-1))
+                        lotot += lo.item()
+                        lo.backward()
+                        opt.step()
+                        
+                # the MSE here is computed on a single sample: so it's highly variable !
+                        # to make sense of it, you should average it over at least 1000 (s,i) points
+                    mod.eval()
+                    lotestset=0
+                    for i in range(len(dsi2X)):
+                        haty = mod(dsi2X[i][0].view(1,1,-1))
+                        lo = loss(haty,dsi2Y[i][0].view(1,-1))
+                        lotestset+= lo.item()
+                    print("epoch %d loss in training %1.9f  loss in test %1.9f" % (ep, lotot, lotestset))
+                del(mod)
+                    
 
 ## Train on both of them (B=24)/(B=1) and Pourcentage au lieu de mean squared error take test set rndomly as well
 
