@@ -133,7 +133,7 @@ class TimeCNN(nn.Module):
         #Linear Layer 2
         self.drop=nn.Dropout2d(0.2)
         self.fc2 = nn.Linear(in_features=64*4, out_features=64*3)
-        self.fc3 = nn.Linear(in_features=64*3, out_features=24*7)
+        self.fc3 = nn.Linear(in_features=64*3, out_features=24*33)
 
     def forward(self, x):
         out = self.layer1(x)
