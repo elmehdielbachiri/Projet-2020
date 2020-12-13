@@ -92,7 +92,8 @@ class TimeCNN(nn.Module):
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
-        
+
+## Try to add convolutinal layers ?        
         #Linear Layer 1
         self.fc1 = nn.Linear(in_features=64*16*16*8, out_features=64*16)
         #Linear Layer 2
