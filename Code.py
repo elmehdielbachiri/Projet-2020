@@ -8,7 +8,7 @@ from random import shuffle
 import pandas as pd
 from random import shuffle
 import matplotlib.pyplot as plt
-
+from sklearn.cluster import KMeans
 
 data = pd.read_csv('/Users/mac/Desktop/Projet Machine Learning/Data/Radar_Traffic_Counts.csv',sep=',') 
 
@@ -36,18 +36,43 @@ directions=data['Direction'].unique().tolist()
 test = data.loc[data.location_name==names[0]][data.Direction==directions[0]]
 
 COORDdata=data.groupby(by=['location_name','location_latitude','location_longitude','Direction'],as_index=False)['Volume'].count()
-couple=data.groupby(by=['location_name','Direction'],as_index=False)['Volume'].count()
 #Pour avoir assez d'entrees
-newcouple=couple[couple['Volume']>10000].reset_index()
+newcouple=COORDdata[COORDdata['Volume']>10000].reset_index()
 keys=[]
 for i in range(len(newcouple)):
     key=(newcouple['location_name'][i],newcouple['Direction'][i])
     keys.append(key)
     
-# After trying a first approach on univariate time that didn't seem to give great results, my second approach consists of defining a model over a multivariate time series (multiple couples (location,Direction) since close locations can have influences on each other in traffic volume)
+# After trying a first approach on a univariate time series that didn't seem to give great results, my second approach consists of defining a model over a multivariate time series (multiple couples (location,Direction) since close locations can have influences on each other in traffic volume) and we want these patterns to be present in our model
 
 ## First Step : Determining Close Locations based on Longitude and Latitude
 
+LISTlonglati=[]
+for i in range(len(newcouple)):
+    key=[newcouple['location_longitude'][i],newcouple['location_latitude'][i]]
+    LISTlonglati.append(key)
+LISTlonglati=np.array(LISTlonglati)
+
+
+#kmeans = KMeans(n_clusters=2, random_state=0).fit(X)
+#kmeans.labels
+
+## location and direction should be strings here
+def GetTimeseries(location,direction):
+    tsdata=data.loc[data.location_name==location][data.Direction==direction]
+    #print(tsdata)
+    tsdata=tsdata['Volume']
+    #tsdata.plot()
+    #plt.show()
+    return np.array(tsdata)
+
+def GetGlobalTimeseries(L):
+    O=[]
+    for key in L:
+        O.append(GetTimeseries(key[0],key[1]))
+    return O
+    
+#Actually after data crunching, it appears that the max distance between the locations is about 18 km so I decided to feed to the model a multivariate time series.
 
 
 # PARAMETERS:
@@ -68,14 +93,7 @@ m =24*7
 
  
 #TIMES SERIES avec donnees POUR CHAQUE (Location,Direction,date (donnees chaque heure) 
-## location and direction should be strings here
-def GetTimeseries(location,direction):
-    tsdata=data.loc[data.location_name==location][data.Direction==direction]
-    #print(tsdata)
-    tsdata=tsdata['Volume']
-    #tsdata.plot()
-    #plt.show()
-    return np.array(tsdata)
+
 
 
 ## First Model CNN (FOR EACH LOCATION AND DIRECTION GET a prediction from the time series)
@@ -83,19 +101,20 @@ def GetTimeseries(location,direction):
 ##Trace des localisations des donnes pour voir s'il est judicieux de trainer le modele sur toutes les localisations (s'ils sont assez proches pour avoir des influences l'une sur l'autre)
 
 
+# Len(keys)=33
 
 class TimeCNN(nn.Module):
     def __init__(self):
         super(TimeCNN, self).__init__()
         #Convolutional Layer 1
         self.layer1 = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=38, kernel_size=3, padding=1),
+            nn.Conv1d(in_channels=1, out_channels=38, kernel_size=33, padding=1),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=3, stride=2)
+            nn.MaxPool1d(kernel_size=33, stride=2)
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=38, out_channels=128, kernel_size=3),
+            nn.Conv1d(in_channels=38, out_channels=128, kernel_size=33),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
@@ -132,35 +151,36 @@ class TimeCNN(nn.Module):
 ## (chaque propriete prendre en compte les patterns  )
 
 
-DIC={}
-for i in range(len(keys)):
-    DIC[keys[i]]=GetTimeseries(keys[i][0],keys[i][1])
-
-
-
-
-seq=DIC[keys[0]]
-print(key)
-seq=GetTimeseries(names[0],directions[0])
+seq=GetGlobalTimeseries(keys)
 si2X, si2Y = [], []
 #seq here contain only the data
-vnorm = max(seq)-min(seq)
-ME=np.mean(seq)
+vnorm = max(max(seq[i]) for i in range(len(seq)))-min(min(seq[i]) for i in range(len(seq)))
+ME=np.mean(np.mean(seq(i)) for i in range(len(seq)))
 dsi2X, dsi2Y = [], []
 xlist, ylist = [], []
+
 for k in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A))):
-    xx = [(seq[z]-ME)/vnorm for z in range(k*A,m+k*A)]
-    xlist.append(torch.tensor(xx,dtype=torch.float32))
-    yy = [(seq[z]-ME)/vnorm for z in range(m+k*A,m+k*A+B)]
-    ylist.append(torch.tensor(yy,dtype=torch.float32))
+    Xlist,Ylist=[],[]
+    for j in range (len(seq)):
+        xx = [(seq[j][z]-ME)/vnorm for z in range(k*A,m+k*A)]
+        Xlist.append(np.array(xx))
+        yy = [(seq[j][z]-ME)/vnorm for z in range(m+k*A,m+k*A+B)]
+        YList.append(np.array(yy))
+    xlist.append(torch.tensor(Xlist,dtype=torch.float32))
+    ylist.append(torch.tensor(Ylist,dtype=torch.float32))
 si2X = xlist
 si2Y= ylist
 # Test set
 for k1 in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A)),((len(seq)-m-B)//A)-1): # build evaluation dataset 10% 
-    xx = [(seq[z]-ME)/vnorm for z in range(k1*A,m+k1*A)]
-    dsi2X.append([torch.tensor(xx,dtype=torch.float32)])
-    yy = [(seq[z]-ME)/vnorm for z in range(m+k1*A,m+k1*A+B)]
-    dsi2Y.append([torch.tensor(yy,dtype=torch.float32)])
+    Xlist,Ylist=[],[]
+    for j in range (len(seq)):
+        xx = [(seq[j][z]-ME)/vnorm for z in range(k1*A,m+k1*A)]
+        Xlist.append(np.array(xx))
+        yy = [(seq[j][z]-ME)/vnorm for z in range(m+k1*A,m+k1*A+B)]
+        Ylist.append(np.array(yy))
+    dsi2X.append(torch.tensor(Xlist,dtype=torch.float32))
+    dsi2Y.append(torch.tensor(Ylist,dtype=torch.float32))
+
 
 
 
