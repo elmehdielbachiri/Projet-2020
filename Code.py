@@ -90,7 +90,7 @@ A=24
 # Prediction Window: predict 1 week
 B=24 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
-m =24*28*3
+m =24*28
 
 # FOR A=1,B=1,m=24*7
 # epoch 0 loss in training 0.042862428  loss in test 0.034414649
@@ -116,13 +116,13 @@ class TimeCNN(nn.Module):
         super(TimeCNN, self).__init__()
         #Convolutional Layer 1
         self.layer1 = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=38, kernel_size=33, padding=1),
+            nn.Conv1d(in_channels=1, out_channels=38, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=33, stride=2)
+            nn.MaxPool1d(kernel_size=3, stride=2)
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=38, out_channels=64, kernel_size=33),
+            nn.Conv1d(in_channels=38, out_channels=64, kernel_size=3),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
@@ -205,12 +205,12 @@ for k1 in range(((11491-m-B)//A)-1-int(0.2*(11491//A)),((11491-B-m)//A)):
 
 mod = TimeCNN()
 loss = torch.nn.MSELoss()
-opt = torch.optim.Adam(mod.parameters(),lr=0.0001)
+opt = torch.optim.Adam(mod.parameters(),lr=0.001)#try 0.0005
 xlist = si2X
 #if len(xlist)<10:continue
 ylist = si2Y
 idxtr = list(range(len(xlist)))
-for ep in range(20):
+for ep in range(2000):
     shuffle(idxtr)
     lotot=0.
     mod.train()
@@ -228,8 +228,8 @@ for ep in range(20):
     mod.eval()
     lotestset=0
     for i in range(len(dsi2X)):
-        haty = mod(dsi2X[i][0].view(1,1,-1))
-        lo = loss(haty,dsi2Y[i][0].view(1,-1))
+        haty = mod(dsi2X[i].view(1,1,-1))
+        lo = loss(haty,dsi2Y[i].view(1,-1))
         lotestset+= lo.item()
     print("epoch %d loss in training %1.9f  loss in test %1.9f" % (ep, lotot, lotestset))
 del(mod)
