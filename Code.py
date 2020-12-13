@@ -72,7 +72,7 @@ def GetGlobalTimeseries(L):
     MIN=[]
     MEAN=[]
     for key in L:
-        O.append(list(GetTimeseries(key[0],key[1])[:11491]))
+        O+=list(GetTimeseries(key[0],key[1])[:11491])
         MAX.append(max(GetTimeseries(key[0],key[1])[:11491]))
         MIN.append(min(GetTimeseries(key[0],key[1])[:11491]))
         MEAN.append(np.mean(GetTimeseries(key[0],key[1])[:11491]))
@@ -88,7 +88,7 @@ def GetGlobalTimeseries(L):
 # Sliding Step : 2 weeks 
 A=24
 # Prediction Window: predict 1 week
-B=24*7 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
+B=24 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
 m =24*28*3
 
@@ -174,36 +174,38 @@ vnorm = GetGlobalTimeseries(keys)[2]-GetGlobalTimeseries(keys)[1]
 ME=GetGlobalTimeseries(keys)[3]
 dsi2X, dsi2Y = [], []
 xlist, ylist = [], []
+xx=[]
+yy=[]
 
-for k in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A))):
-    Xj,Yj=[],[]
-    for j in range(seq.shape[0]):
-        xx = [(seq[j][z]-ME)/vnorm for z in range(k*A,m+k*A)]
-        yy = [(seq[j][z]-ME)/vnorm for z in range(m+k*A,m+k*A+B)]
-        Xj,append(xx)
-        Yj.append(yy)
-    ylist.append(torch.tensor(Xj,dtype=torch.float32))
-    xlist.append(torch.tensor(Yj,dtype=torch.float32))
+for k in range(((11491-m-B)//A)-1-int(0.2*(11491//A))):
+    xx=[]
+    yy=[]
+    #maybe-1
+    for j in range(33):
+        xx += [(seq[j*11491+z]-ME)/vnorm for z in range(k*A,m+k*A)]
+        yy += [(seq[j*11491+z]-ME)/vnorm for z in range(m+k*A,m+k*A+B)]
+    xlist.append(torch.tensor(xx,dtype=torch.float32))
+    ylist.append(torch.tensor(yy,dtype=torch.float32))
 si2X = xlist
 si2Y= ylist
 # Test set
-for k1 in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A)),((len(seq)-m-B)//A)-1): 
-    Xj,Yj=[],[]
-    for j in range(seq.shape[0]):
-        xx = [(seq[j][z]-ME)/vnorm for z in range(k1*A,m+k1*A)]
-        yy = [(seq[j][z]-ME)/vnorm for z in range(m+k1*A,m+k1*A+B)]
-        Xj,append(xx)
-        Yj.append(yy)
-    dsi2X.append(torch.tensor(Xj,dtype=torch.float32))
-    dsi2Y.append(torch.tensor(Yj,dtype=torch.float32))
-    
 
+for k1 in range(((11491-m-B)//A)-1-int(0.2*(11491//A)),((11491//A)-1)):
+    xx=[]
+    yy=[]
+    #maybe-1
+    for j in range(33): # build evaluation dataset 10% 
+        xx += [(seq[j*11491+z]-ME)/vnorm for z in range(k1*A,m+k1*A)]
+        
+        yy += [(seq[j*11491+z]-ME)/vnorm for z in range(m+k1*A,m+k1*A+B)]
+    dsi2Y.append([torch.tensor(yy,dtype=torch.float32)])
+    dsi2X.append([torch.tensor(xx,dtype=torch.float32)])
 
 
 
 mod = TimeCNN()
 loss = torch.nn.MSELoss()
-opt = torch.optim.Adam(mod.parameters(),lr=0.001)
+opt = torch.optim.Adam(mod.parameters(),lr=0.0001)
 xlist = si2X
 #if len(xlist)<10:continue
 ylist = si2Y
@@ -229,7 +231,7 @@ for ep in range(20):
         haty = mod(dsi2X[i][0].view(1,1,-1))
         lo = loss(haty,dsi2Y[i][0].view(1,-1))
         lotestset+= lo.item()
-    print("epoch %d loss in training %1.20f  loss in test %1.20f" % (ep, lotot, lotestset))
+    print("epoch %d loss in training %1.9f  loss in test %1.9f" % (ep, lotot, lotestset))
 del(mod)
                     
 
