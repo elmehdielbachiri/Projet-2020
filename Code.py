@@ -168,6 +168,7 @@ for i in range(len(keys)):
 
 seq=GetGlobalTimeseries(keys)[0]
 print(seq.shape)
+
 si2X, si2Y = [], []
 #seq here contain only the data
 vnorm = GetGlobalTimeseries(keys)[2]-GetGlobalTimeseries(keys)[1]
@@ -190,16 +191,15 @@ si2X = xlist
 si2Y= ylist
 # Test set
 
-for k1 in range(((11491-m-B)//A)-1-int(0.2*(11491//A)),((11491//A)-1)):
+for k1 in range(((11491-m-B)//A)-1-int(0.2*(11491//A)),((11491-B-m)//A)):
     xx=[]
     yy=[]
     #maybe-1
     for j in range(33): # build evaluation dataset 10% 
         xx += [(seq[j*11491+z]-ME)/vnorm for z in range(k1*A,m+k1*A)]
-        
         yy += [(seq[j*11491+z]-ME)/vnorm for z in range(m+k1*A,m+k1*A+B)]
-    dsi2Y.append([torch.tensor(yy,dtype=torch.float32)])
-    dsi2X.append([torch.tensor(xx,dtype=torch.float32)])
+    dsi2Y.append(torch.tensor(yy,dtype=torch.float32))
+    dsi2X.append(torch.tensor(xx,dtype=torch.float32))
 
 
 
