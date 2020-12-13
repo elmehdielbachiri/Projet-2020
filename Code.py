@@ -175,7 +175,7 @@ for kn in range(K):
                 #if len(xlist)<10:continue
                 ylist = si2Y
                 idxtr = list(range(len(xlist)))
-                for ep in range(200):
+                for ep in range(20):
                     shuffle(idxtr)
                     lotot=0.
                     mod.train()
