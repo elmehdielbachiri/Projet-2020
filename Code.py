@@ -43,7 +43,7 @@ for i in range(len(newcouple)):
     key=(newcouple['location_name'][i],newcouple['Direction'][i])
     keys.append(key)
     
-# After trying a first approach on a univariate time series that didn't seem to give great results, my second approach consists of defining a model over a multivariate time series (multiple couples (location,Direction) since close locations can have influences on each other in traffic volume) and we want these patterns to be present in our model
+# After trying a first approach on univariate time that didn't seem to give great results, my second approach consists of defining a model over a multivariate time series (multiple couples (location,Direction) since close locations can have influences on each other in traffic volume)
 
 ## First Step : Determining Close Locations based on Longitude and Latitude
 
@@ -68,20 +68,29 @@ def GetTimeseries(location,direction):
 
 def GetGlobalTimeseries(L):
     O=[]
+    MAX=[]
+    MIN=[]
+    MEAN=[]
     for key in L:
-        O.append(GetTimeseries(key[0],key[1]))
-    return O
+        O.append(list(GetTimeseries(key[0],key[1])[:11491]))
+        MAX.append(max(GetTimeseries(key[0],key[1])[:11491]))
+        MIN.append(min(GetTimeseries(key[0],key[1])[:11491]))
+        MEAN.append(np.mean(GetTimeseries(key[0],key[1])[:11491]))
+    MIN=min(MIN)
+    MAX=max(MAX)
+    MEAN=np.mean(MEAN)
+    return np.array(O),MIN,MAX,MEAN
     
 #Actually after data crunching, it appears that the max distance between the locations is about 18 km so I decided to feed to the model a multivariate time series.
 
 
 # PARAMETERS:
 # Sliding Step : 2 weeks 
-A=1
+A=24
 # Prediction Window: predict 1 week
-B=1 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
+B=24*7 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
-m =24*7
+m =24*28*3
 
 # FOR A=1,B=1,m=24*7
 # epoch 0 loss in training 0.042862428  loss in test 0.034414649
@@ -101,7 +110,6 @@ m =24*7
 ##Trace des localisations des donnes pour voir s'il est judicieux de trainer le modele sur toutes les localisations (s'ils sont assez proches pour avoir des influences l'une sur l'autre)
 
 
-# Len(keys)=33
 
 class TimeCNN(nn.Module):
     def __init__(self):
@@ -114,14 +122,14 @@ class TimeCNN(nn.Module):
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=38, out_channels=128, kernel_size=33),
+            nn.Conv1d(in_channels=38, out_channels=64, kernel_size=33),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
 
 ## Try to add convolutinal layers ?        
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=128*8, out_features=64*4)
+        self.fc1 = nn.Linear(in_features=64*8, out_features=64*4)
         #Linear Layer 2
         self.drop=nn.Dropout2d(0.2)
         self.fc2 = nn.Linear(in_features=64*4, out_features=64*3)
@@ -151,43 +159,51 @@ class TimeCNN(nn.Module):
 ## (chaque propriete prendre en compte les patterns  )
 
 
-seq=GetGlobalTimeseries(keys)
+DIC={}
+for i in range(len(keys)):
+    DIC[keys[i]]=GetTimeseries(keys[i][0],keys[i][1])
+
+
+
+
+seq=GetGlobalTimeseries(keys)[0]
+print(seq.shape)
 si2X, si2Y = [], []
 #seq here contain only the data
-vnorm = max(max(seq[i]) for i in range(len(seq)))-min(min(seq[i]) for i in range(len(seq)))
-ME=np.mean(np.mean(seq(i)) for i in range(len(seq)))
+vnorm = GetGlobalTimeseries(keys)[2]-GetGlobalTimeseries(keys)[1]
+ME=GetGlobalTimeseries(keys)[3]
 dsi2X, dsi2Y = [], []
 xlist, ylist = [], []
 
 for k in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A))):
-    Xlist,Ylist=[],[]
-    for j in range (len(seq)):
+    Xj,Yj=[],[]
+    for j in range(seq.shape[0]):
         xx = [(seq[j][z]-ME)/vnorm for z in range(k*A,m+k*A)]
-        Xlist.append(np.array(xx))
         yy = [(seq[j][z]-ME)/vnorm for z in range(m+k*A,m+k*A+B)]
-        YList.append(np.array(yy))
-    xlist.append(torch.tensor(Xlist,dtype=torch.float32))
-    ylist.append(torch.tensor(Ylist,dtype=torch.float32))
+        Xj,append(xx)
+        Yj.append(yy)
+    ylist.append(torch.tensor(Xj,dtype=torch.float32))
+    xlist.append(torch.tensor(Yj,dtype=torch.float32))
 si2X = xlist
 si2Y= ylist
 # Test set
-for k1 in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A)),((len(seq)-m-B)//A)-1): # build evaluation dataset 10% 
-    Xlist,Ylist=[],[]
-    for j in range (len(seq)):
+for k1 in range(((len(seq)-m-B)//A)-1-int(0.2*((len(seq))//A)),((len(seq)-m-B)//A)-1): 
+    Xj,Yj=[],[]
+    for j in range(seq.shape[0]):
         xx = [(seq[j][z]-ME)/vnorm for z in range(k1*A,m+k1*A)]
-        Xlist.append(np.array(xx))
         yy = [(seq[j][z]-ME)/vnorm for z in range(m+k1*A,m+k1*A+B)]
-        Ylist.append(np.array(yy))
-    dsi2X.append(torch.tensor(Xlist,dtype=torch.float32))
-    dsi2Y.append(torch.tensor(Ylist,dtype=torch.float32))
-
+        Xj,append(xx)
+        Yj.append(yy)
+    dsi2X.append(torch.tensor(Xj,dtype=torch.float32))
+    dsi2Y.append(torch.tensor(Yj,dtype=torch.float32))
+    
 
 
 
 
 mod = TimeCNN()
 loss = torch.nn.MSELoss()
-opt = torch.optim.Adam(mod.parameters(),lr=0.0005)
+opt = torch.optim.Adam(mod.parameters(),lr=0.001)
 xlist = si2X
 #if len(xlist)<10:continue
 ylist = si2Y
@@ -213,7 +229,7 @@ for ep in range(20):
         haty = mod(dsi2X[i][0].view(1,1,-1))
         lo = loss(haty,dsi2Y[i][0].view(1,-1))
         lotestset+= lo.item()
-    print("epoch %d loss in training %1.9f  loss in test %1.9f" % (ep, lotot, lotestset))
+    print("epoch %d loss in training %1.20f  loss in test %1.20f" % (ep, lotot, lotestset))
 del(mod)
                     
 
