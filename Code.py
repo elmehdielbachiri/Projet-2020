@@ -68,18 +68,15 @@ def GetTimeseries(location,direction):
 
 def GetGlobalTimeseries(L):
     O=[]
-    MAX=[]
-    MIN=[]
-    MEAN=[]
     for key in L:
-        O+=list(GetTimeseries(key[0],key[1])[:11491])
-        MAX.append(max(GetTimeseries(key[0],key[1])[:11491]))
-        MIN.append(min(GetTimeseries(key[0],key[1])[:11491]))
-        MEAN.append(np.mean(GetTimeseries(key[0],key[1])[:11491]))
-    MIN=min(MIN)
-    MAX=max(MAX)
-    MEAN=np.mean(MEAN)
-    return np.array(O),MIN,MAX,MEAN
+        K=GetTimeseries(key[0],key[1])[:11491]
+        MAX=max(GetTimeseries(key[0],key[1])[:11491])
+        MIN=min(GetTimeseries(key[0],key[1])[:11491])
+        MEAN=np.mean(GetTimeseries(key[0],key[1])[:11491])
+        for i in range(len(K)):
+            K[i]=(K[i]-MEAN)/(MAX-MIN)
+        O+=list(K)
+    return np.array(O)
     
 #Actually after data crunching, it appears that the max distance between the locations is about 18 km so I decided to feed to the model a multivariate time series.
 
@@ -183,10 +180,10 @@ class TimeCNN(nn.Module):
         #Linear Layer 1
         self.fc1 = nn.Linear(in_features=256*8, out_features=256*8)
         #Linear Layer 2
-        self.drop=nn.Dropout2d(0.25)
+        self.drop=nn.Dropout2d(0.0)
         self.fc2 = nn.Linear(in_features=256*8, out_features=4*256)
         self.fc3 = nn.Linear(in_features=4*256, out_features=420)
-        self.fc4 = nn.Linear(in_features=420, out_features=12*33)
+        self.fc4 = nn.Linear(in_features=420, out_features=24*7*33)
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
@@ -220,13 +217,11 @@ for i in range(len(keys)):
 
 
 
-seq=GetGlobalTimeseries(keys)[0]
+seq=GetGlobalTimeseries(keys)
 print(seq.shape)
 
 si2X, si2Y = [], []
 #seq here contain only the data
-vnorm = GetGlobalTimeseries(keys)[2]-GetGlobalTimeseries(keys)[1]
-ME=GetGlobalTimeseries(keys)[3]
 xlist, ylist = [], []
 
 
@@ -234,15 +229,13 @@ for k in range((11491-B-m)//A):
     xx=[]
     yy=[]
     for j in range(33):
-        xx += [(seq[j*11491+z]-ME)/vnorm for z in range(k*A,m+k*A)]
-        yy += [(seq[j*11491+z]-ME)/vnorm for z in range(m+k*A,m+k*A+B)]
+        xx += [seq[j*11491+z] for z in range(k*A,m+k*A)]
+        yy += [seq[j*11491+z] for z in range(m+k*A,m+k*A+B)]
     xlist.append(torch.tensor(xx,dtype=torch.float32))
     ylist.append(torch.tensor(yy,dtype=torch.float32))
 listtotX= xlist
 listtotY= ylist
 # Test set
-shuffle(listtotX)
-shuffle(listtotY)
 
 si2X=listtotX[:int(0.9*len(listtotX))]
 si2Y=listtotY[:int(0.9*len(listtotY))]
@@ -278,7 +271,7 @@ for ep in range(200):
         haty = mod(dsi2X[i].view(1,1,-1))
         lo = loss(haty,dsi2Y[i].view(1,-1))
         lotestset+= lo.item()
-    print("epoch %d loss in training %1.9f mean of loss in training %1.9f loss in test %1.9f mean loss in test %1.9f" % (ep, lotot,lotot/len(xlist), lotestset,lotestset/len(dsi2X)))
+    print("epoch %d loss in training %1.20f mean of loss in training %1.20f loss in test %1.20f mean loss in test %1.20f" % (ep, lotot,lotot/len(xlist), lotestset,lotestset/len(dsi2X)))
 del(mod)
                     
 
