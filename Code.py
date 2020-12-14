@@ -86,18 +86,41 @@ def GetGlobalTimeseries(L):
 
 # PARAMETERS:
 # Sliding Step : 2 weeks 
-A=24
+A=24*7
 # Prediction Window: predict 1 week
-B=24 #(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
+B=24*7#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
-m =24*28
+m =24*28*3
 
+#
+#For this data A=24*7 i got this
+# # Prediction Window: predict 1 week
+# B=24*7#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
+# # Base training window: (8 weeks here)
+# m =24*28*3
 # FOR A=1,B=1,m=24*7
-# epoch 0 loss in training 0.042862428  loss in test 0.034414649
-# epoch 1 loss in training 0.042459846  loss in test 0.034374041
-# epoch 2 loss in training 0.042413600  loss in test 0.034949515
-# epoch 3 loss in training 0.042598883  loss in test 0.035271741
-# epoch 4 loss in training 0.042557107  loss in test 0.035366366
+# epoch 0 loss in training 0.491944661  loss in test 0.075108298
+# epoch 1 loss in training 0.418768332  loss in test 0.070694686
+# epoch 2 loss in training 0.416672938  loss in test 0.071733184
+# epoch 3 loss in training 0.414886261  loss in test 0.072527763
+# epoch 4 loss in training 0.410098646  loss in test 0.074190622
+# epoch 5 loss in training 0.408289321  loss in test 0.072425460
+# epoch 6 loss in training 0.405932838  loss in test 0.073036116
+# epoch 7 loss in training 0.402572236  loss in test 0.072376653
+# epoch 8 loss in training 0.394108333  loss in test 0.076038189
+# epoch 9 loss in training 0.387961414  loss in test 0.074769234
+# epoch 10 loss in training 0.373244469  loss in test 0.075114297
+# epoch 11 loss in training 0.370590308  loss in test 0.075127857
+# epoch 12 loss in training 0.350301588  loss in test 0.078255937
+# epoch 13 loss in training 0.333505080  loss in test 0.075395570
+# epoch 14 loss in training 0.330101819  loss in test 0.075419672
+# epoch 15 loss in training 0.324998003  loss in test 0.078211520
+# epoch 16 loss in training 0.316303179  loss in test 0.074470709
+# epoch 17 loss in training 0.312921785  loss in test 0.076374203
+# epoch 18 loss in training 0.305552169  loss in test 0.082386170
+# epoch 19 loss in training 0.301894735  loss in test 0.077721985
+# epoch 20 loss in training 0.292262418  loss in test 0.077108342
+# epoch 21 loss in training 0.289270942  loss in test 0.079902284
 
 
  
@@ -116,25 +139,25 @@ class TimeCNN(nn.Module):
         super(TimeCNN, self).__init__()
         #Convolutional Layer 1
         self.layer1 = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=38, kernel_size=3, padding=1),
+            nn.Conv1d(in_channels=1, out_channels=64, kernel_size=2, padding=1),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=3, stride=2)
+            nn.MaxPool1d(kernel_size=2, stride=2)
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=38, out_channels=64, kernel_size=3),
+            nn.Conv1d(in_channels=64, out_channels=256, kernel_size=2),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
 
 ## Try to add convolutinal layers ?        
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=64*8, out_features=64*4)
+        self.fc1 = nn.Linear(in_features=256*8, out_features=256*8)
         #Linear Layer 2
-        self.drop=nn.Dropout2d(0.2)
-        self.fc2 = nn.Linear(in_features=64*4, out_features=64*3)
-        self.fc3 = nn.Linear(in_features=64*3, out_features=24*33)
-
+        self.drop=nn.Dropout2d(0.0)
+        self.fc2 = nn.Linear(in_features=256*8, out_features=6*256)
+        self.fc3 = nn.Linear(in_features=6*256, out_features=1024)
+        self.fc4 = nn.Linear(in_features=1024, out_features=24*33*7)
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
@@ -143,6 +166,8 @@ class TimeCNN(nn.Module):
         out=self.drop(out)
         out = self.fc2(out)
         out=self.fc3(out)
+        out=self.drop(out)
+        out=self.fc4(out)
         return out
 
 
@@ -178,7 +203,7 @@ xlist, ylist = [], []
 xx=[]
 yy=[]
 
-for k in range(((11491-m-B)//A)-1-int(0.2*(11491//A))):
+for k in range(((11491-m-B)//A)-1-int(0.1*(11491//A))):
     xx=[]
     yy=[]
     #maybe-1
@@ -191,7 +216,7 @@ si2X = xlist
 si2Y= ylist
 # Test set
 
-for k1 in range(((11491-m-B)//A)-1-int(0.2*(11491//A)),((11491-B-m)//A)):
+for k1 in range(((11491-m-B)//A)-1-int(0.1*(11491//A)),((11491-B-m)//A)):
     xx=[]
     yy=[]
     #maybe-1
@@ -205,12 +230,12 @@ for k1 in range(((11491-m-B)//A)-1-int(0.2*(11491//A)),((11491-B-m)//A)):
 
 mod = TimeCNN()
 loss = torch.nn.MSELoss()
-opt = torch.optim.Adam(mod.parameters(),lr=0.001)#try 0.0005
+opt = torch.optim.Adam(mod.parameters(),lr=0.00009)#try 0.0005
 xlist = si2X
 #if len(xlist)<10:continue
 ylist = si2Y
 idxtr = list(range(len(xlist)))
-for ep in range(2000):
+for ep in range(200):
     shuffle(idxtr)
     lotot=0.
     mod.train()
