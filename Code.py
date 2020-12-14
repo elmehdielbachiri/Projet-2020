@@ -86,11 +86,11 @@ def GetGlobalTimeseries(L):
 
 # PARAMETERS:
 # Sliding Step : 2 weeks 
-A=24*7
+A=12
 # Prediction Window: predict 1 week
-B=24*7#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
+B=12#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
-m =24*28*3
+m =24*28
 
 #
 #For this data A=24*7 i got this
@@ -98,29 +98,58 @@ m =24*28*3
 # B=24*7#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # # Base training window: (8 weeks here)
 # m =24*28*3
-# FOR A=1,B=1,m=24*7
-# epoch 0 loss in training 0.491944661  loss in test 0.075108298
-# epoch 1 loss in training 0.418768332  loss in test 0.070694686
-# epoch 2 loss in training 0.416672938  loss in test 0.071733184
-# epoch 3 loss in training 0.414886261  loss in test 0.072527763
-# epoch 4 loss in training 0.410098646  loss in test 0.074190622
-# epoch 5 loss in training 0.408289321  loss in test 0.072425460
-# epoch 6 loss in training 0.405932838  loss in test 0.073036116
-# epoch 7 loss in training 0.402572236  loss in test 0.072376653
-# epoch 8 loss in training 0.394108333  loss in test 0.076038189
-# epoch 9 loss in training 0.387961414  loss in test 0.074769234
-# epoch 10 loss in training 0.373244469  loss in test 0.075114297
-# epoch 11 loss in training 0.370590308  loss in test 0.075127857
-# epoch 12 loss in training 0.350301588  loss in test 0.078255937
-# epoch 13 loss in training 0.333505080  loss in test 0.075395570
-# epoch 14 loss in training 0.330101819  loss in test 0.075419672
-# epoch 15 loss in training 0.324998003  loss in test 0.078211520
-# epoch 16 loss in training 0.316303179  loss in test 0.074470709
-# epoch 17 loss in training 0.312921785  loss in test 0.076374203
-# epoch 18 loss in training 0.305552169  loss in test 0.082386170
-# epoch 19 loss in training 0.301894735  loss in test 0.077721985
-# epoch 20 loss in training 0.292262418  loss in test 0.077108342
-# epoch 21 loss in training 0.289270942  loss in test 0.079902284
+# with a learning rate of 0.00009
+# epoch 0 loss in training 0.471838177  loss in test 0.077578559
+# epoch 1 loss in training 0.423537960  loss in test 0.073999275
+# epoch 2 loss in training 0.416005374  loss in test 0.070573498
+# epoch 3 loss in training 0.409741406  loss in test 0.075812604
+# epoch 4 loss in training 0.408656125  loss in test 0.070852105
+# epoch 5 loss in training 0.401123592  loss in test 0.070285265
+# epoch 6 loss in training 0.380392734  loss in test 0.082435544
+# epoch 7 loss in training 0.355312970  loss in test 0.075832129
+# epoch 8 loss in training 0.347168141  loss in test 0.073185963
+# epoch 9 loss in training 0.332027352  loss in test 0.075729307
+# epoch 10 loss in training 0.324446695  loss in test 0.076210757
+# epoch 11 loss in training 0.308708608  loss in test 0.071809540
+# epoch 12 loss in training 0.297042384  loss in test 0.076490780
+# epoch 13 loss in training 0.291697158  loss in test 0.073425388
+# epoch 14 loss in training 0.280970556  loss in test 0.075504074
+# epoch 15 loss in training 0.268070364  loss in test 0.076505395
+# epoch 16 loss in training 0.257915833  loss in test 0.075552585
+# epoch 17 loss in training 0.249529901  loss in test 0.075845813
+# epoch 18 loss in training 0.245589789  loss in test 0.076318165
+# epoch 19 loss in training 0.228615218  loss in test 0.077533748
+# epoch 20 loss in training 0.224274368  loss in test 0.073901700
+# epoch 21 loss in training 0.220722528  loss in test 0.072185349
+# epoch 22 loss in training 0.210977599  loss in test 0.078165496
+# epoch 23 loss in training 0.203596522  loss in test 0.079721950
+# epoch 24 loss in training 0.198244498  loss in test 0.084685174
+# epoch 25 loss in training 0.197454100  loss in test 0.085641611
+# epoch 26 loss in training 0.191584670  loss in test 0.082541567
+# epoch 27 loss in training 0.189288178  loss in test 0.081371472
+# epoch 28 loss in training 0.185081213  loss in test 0.085814657
+# epoch 29 loss in training 0.181005332  loss in test 0.083859200
+# epoch 30 loss in training 0.183363169  loss in test 0.078149826
+# epoch 31 loss in training 0.178964624  loss in test 0.082515622
+# epoch 32 loss in training 0.177221693  loss in test 0.077932429
+# epoch 33 loss in training 0.175793831  loss in test 0.079448570
+# epoch 34 loss in training 0.171824392  loss in test 0.076258258
+# epoch 35 loss in training 0.171378931  loss in test 0.079578316
+# epoch 36 loss in training 0.168185166  loss in test 0.077745709
+# epoch 37 loss in training 0.167801483  loss in test 0.079506281
+# epoch 38 loss in training 0.166070602  loss in test 0.079108103
+# epoch 39 loss in training 0.165304903  loss in test 0.089499418
+# epoch 40 loss in training 0.162445228  loss in test 0.079746256
+# epoch 41 loss in training 0.159858734  loss in test 0.082297324
+# epoch 42 loss in training 0.159031569  loss in test 0.075542930
+# epoch 43 loss in training 0.160174414  loss in test 0.080739305
+# epoch 44 loss in training 0.156031685  loss in test 0.085205454
+# epoch 45 loss in training 0.156034311  loss in test 0.085262573
+# epoch 46 loss in training 0.155304636  loss in test 0.083840379
+# epoch 47 loss in training 0.152952819  loss in test 0.085320485
+# epoch 48 loss in training 0.149773690  loss in test 0.084390363
+# epoch 49 loss in training 0.146017590  loss in test 0.084415266
+# epoch 50 loss in training 0.143693265  loss in test 0.083015878
 
 
  
@@ -157,7 +186,7 @@ class TimeCNN(nn.Module):
         self.drop=nn.Dropout2d(0.0)
         self.fc2 = nn.Linear(in_features=256*8, out_features=6*256)
         self.fc3 = nn.Linear(in_features=6*256, out_features=1024)
-        self.fc4 = nn.Linear(in_features=1024, out_features=24*33*7)
+        self.fc4 = nn.Linear(in_features=1024, out_features=12*33)
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
@@ -198,39 +227,32 @@ si2X, si2Y = [], []
 #seq here contain only the data
 vnorm = GetGlobalTimeseries(keys)[2]-GetGlobalTimeseries(keys)[1]
 ME=GetGlobalTimeseries(keys)[3]
-dsi2X, dsi2Y = [], []
 xlist, ylist = [], []
-xx=[]
-yy=[]
 
-for k in range(((11491-m-B)//A)-1-int(0.1*(11491//A))):
+
+for k in range((11491-B-m)//A):
     xx=[]
     yy=[]
-    #maybe-1
     for j in range(33):
         xx += [(seq[j*11491+z]-ME)/vnorm for z in range(k*A,m+k*A)]
         yy += [(seq[j*11491+z]-ME)/vnorm for z in range(m+k*A,m+k*A+B)]
     xlist.append(torch.tensor(xx,dtype=torch.float32))
     ylist.append(torch.tensor(yy,dtype=torch.float32))
-si2X = xlist
-si2Y= ylist
+listtotX= xlist
+listtotY= ylist
 # Test set
+shuffle(listtotX)
+shuffle(listtotY)
 
-for k1 in range(((11491-m-B)//A)-1-int(0.1*(11491//A)),((11491-B-m)//A)):
-    xx=[]
-    yy=[]
-    #maybe-1
-    for j in range(33): # build evaluation dataset 10% 
-        xx += [(seq[j*11491+z]-ME)/vnorm for z in range(k1*A,m+k1*A)]
-        yy += [(seq[j*11491+z]-ME)/vnorm for z in range(m+k1*A,m+k1*A+B)]
-    dsi2Y.append(torch.tensor(yy,dtype=torch.float32))
-    dsi2X.append(torch.tensor(xx,dtype=torch.float32))
+si2X=listtotX[:int(0.9*len(listtotX))]
+si2Y=listtotY[:int(0.9*len(listtotY))]
 
-
+dsi2X =listtotX[int(0.9*len(listtotX)):]
+dsi2Y=listtotX[int(0.9*len(listtotX)):]
 
 mod = TimeCNN()
 loss = torch.nn.MSELoss()
-opt = torch.optim.Adam(mod.parameters(),lr=0.00009)#try 0.0005
+opt = torch.optim.Adam(mod.parameters(),lr=0.0005)#try 0.0005
 xlist = si2X
 #if len(xlist)<10:continue
 ylist = si2Y
