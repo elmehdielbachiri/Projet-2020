@@ -84,11 +84,11 @@ def GetGlobalTimeseries(L):
 
 # PARAMETERS:
 # Sliding Step : 2 weeks 
-A=1
+A=24*28
 # Prediction Window: predict 1 week
-B=1#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
+B=24*28#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
-m =24
+m =24*28*3
 
 #
 #For this data A=24*7 i got this
@@ -97,6 +97,11 @@ m =24
 # # Base training window: (8 weeks here)
 # m =24*28*3
 # with a learning rate of 0.00009
+#
+#self.fc1 = nn.Linear(in_features=256*8, out_features=256*8)       
+#  self.fc2 = nn.Linear(in_features=256*8, out_features=4*256)
+#        self.fc3 = nn.Linear(in_features=4*256, out_features=420)
+#        self.fc4 = nn.Linear(in_features=420, out_features=24*7*33)
 # epoch 0 loss in training 0.471838177  loss in test 0.077578559
 # epoch 1 loss in training 0.423537960  loss in test 0.073999275
 # epoch 2 loss in training 0.416005374  loss in test 0.070573498
@@ -172,19 +177,18 @@ class TimeCNN(nn.Module):
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=2),
+            nn.Conv1d(in_channels=32, out_channels=256, kernel_size=2),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
 
 ## Try to add convolutinal layers ?        
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=64*8, out_features=64*4)
+        self.fc1 = nn.Linear(in_features=256*8, out_features=256*4)
         #Linear Layer 2
         self.drop=nn.Dropout2d(0.0)
-        self.fc2 = nn.Linear(in_features=64*4, out_features=2*64)
-        self.fc3 = nn.Linear(in_features=2*64, out_features=64)
-        self.fc4 = nn.Linear(in_features=64, out_features=33)
+        self.fc2 = nn.Linear(in_features=256*4, out_features=2*256)
+        self.fc3 = nn.Linear(in_features=2*256, out_features=24*33*28)
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
@@ -193,8 +197,6 @@ class TimeCNN(nn.Module):
         out=self.drop(out)
         out = self.fc2(out)
         out=self.fc3(out)
-        out=self.drop(out)
-        out=self.fc4(out)
         return out
 
 
@@ -246,7 +248,7 @@ dsi2Y=listtotY[int(0.9*len(listtotY)):]
 
 mod = TimeCNN()
 loss = torch.nn.MSELoss()
-opt = torch.optim.Adam(mod.parameters(),lr=0.0005)#try 0.0005
+opt = torch.optim.Adam(mod.parameters(),lr=0.00009)#try 0.0005
 xlist = si2X
 #if len(xlist)<10:continue
 ylist = si2Y
