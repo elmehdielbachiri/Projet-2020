@@ -79,16 +79,16 @@ def GetGlobalTimeseries(L):
         O+=list(K)
     return np.array(O)
     
-#Actually after data crunching, it appears that the max distance between the locations is about 18 km so I decided to feed to the model a multivariate time series.
+#Actually after data crunching, it appears that the max distance between the locations is about 18 km so I decided to feed to the model a multivariate time series by concatenating the array
 
 
 # PARAMETERS:
 # Sliding Step : 2 weeks 
-A=24*28
+A=3
 # Prediction Window: predict 1 week
-B=24*28#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
+B=6#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
-m =24*28*3
+m=3*24
 
 #
 #For this data A=24*7 i got this
@@ -177,18 +177,17 @@ class TimeCNN(nn.Module):
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=32, out_channels=256, kernel_size=2),
+            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=2),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
 
 ## Try to add convolutinal layers ?        
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=256*8, out_features=256*4)
+        self.fc1 = nn.Linear(in_features=64*8, out_features= 256*4)
         #Linear Layer 2
-        self.drop=nn.Dropout2d(0.0)
-        self.fc2 = nn.Linear(in_features=256*4, out_features=2*256)
-        self.fc3 = nn.Linear(in_features=2*256, out_features=24*33*28)
+        self.drop=nn.Dropout2d(0.2)
+        self.fc2 = nn.Linear(in_features=256*4, out_features=6*33)
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
@@ -196,7 +195,6 @@ class TimeCNN(nn.Module):
         out = self.fc1(out)
         out=self.drop(out)
         out = self.fc2(out)
-        out=self.fc3(out)
         return out
 
 
@@ -240,15 +238,18 @@ listtotX= xlist
 listtotY= ylist
 # Test set
 
-si2X=listtotX[:int(0.9*len(listtotX))]
-si2Y=listtotY[:int(0.9*len(listtotY))]
+shuffle(listtotX)
+shuffle(listtotY)
 
-dsi2X =listtotX[int(0.9*len(listtotX)):]
-dsi2Y=listtotY[int(0.9*len(listtotY)):]
+si2X=listtotX[:int(0.75*len(listtotX))]
+si2Y=listtotY[:int(0.7*len(listtotY))]
+
+dsi2X =listtotX[int(0.75*len(listtotX)):]
+dsi2Y=listtotY[int(0.75*len(listtotY)):]
 
 mod = TimeCNN()
 loss = torch.nn.MSELoss()
-opt = torch.optim.Adam(mod.parameters(),lr=0.00009)#try 0.0005
+opt = torch.optim.Adam(mod.parameters(),lr=0.0001)#try 0.0005
 xlist = si2X
 #if len(xlist)<10:continue
 ylist = si2Y
