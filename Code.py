@@ -86,11 +86,11 @@ def GetGlobalTimeseries(L):
 
 # PARAMETERS:
 # Sliding Step : 2 weeks 
-A=12
+A=24*7
 # Prediction Window: predict 1 week
-B=12#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
+B=24*7#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
-m =24*28
+m =24*7*3
 
 #
 #For this data A=24*7 i got this
@@ -183,10 +183,10 @@ class TimeCNN(nn.Module):
         #Linear Layer 1
         self.fc1 = nn.Linear(in_features=256*8, out_features=256*8)
         #Linear Layer 2
-        self.drop=nn.Dropout2d(0.0)
-        self.fc2 = nn.Linear(in_features=256*8, out_features=6*256)
-        self.fc3 = nn.Linear(in_features=6*256, out_features=1024)
-        self.fc4 = nn.Linear(in_features=1024, out_features=12*33)
+        self.drop=nn.Dropout2d(0.25)
+        self.fc2 = nn.Linear(in_features=256*8, out_features=4*256)
+        self.fc3 = nn.Linear(in_features=4*256, out_features=420)
+        self.fc4 = nn.Linear(in_features=420, out_features=12*33)
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
@@ -248,11 +248,11 @@ si2X=listtotX[:int(0.9*len(listtotX))]
 si2Y=listtotY[:int(0.9*len(listtotY))]
 
 dsi2X =listtotX[int(0.9*len(listtotX)):]
-dsi2Y=listtotX[int(0.9*len(listtotX)):]
+dsi2Y=listtotY[int(0.9*len(listtotY)):]
 
 mod = TimeCNN()
 loss = torch.nn.MSELoss()
-opt = torch.optim.Adam(mod.parameters(),lr=0.0005)#try 0.0005
+opt = torch.optim.Adam(mod.parameters(),lr=0.0001)#try 0.0005
 xlist = si2X
 #if len(xlist)<10:continue
 ylist = si2Y
@@ -278,7 +278,7 @@ for ep in range(200):
         haty = mod(dsi2X[i].view(1,1,-1))
         lo = loss(haty,dsi2Y[i].view(1,-1))
         lotestset+= lo.item()
-    print("epoch %d loss in training %1.9f  loss in test %1.9f" % (ep, lotot, lotestset))
+    print("epoch %d loss in training %1.9f mean of loss in training %1.9f loss in test %1.9f mean loss in test %1.9f" % (ep, lotot,lotot/len(xlist), lotestset,lotestset/len(dsi2X)))
 del(mod)
                     
 
