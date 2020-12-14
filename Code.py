@@ -64,17 +64,18 @@ def GetTimeseries(location,direction):
     tsdata=tsdata['Volume']
     #tsdata.plot()
     #plt.show()
-    return np.array(tsdata)
+    return np.array(tsdata,dtype=np.dtype(float))
 
 def GetGlobalTimeseries(L):
     O=[]
     for key in L:
         K=GetTimeseries(key[0],key[1])[:11491]
-        MAX=max(GetTimeseries(key[0],key[1])[:11491])
-        MIN=min(GetTimeseries(key[0],key[1])[:11491])
-        MEAN=np.mean(GetTimeseries(key[0],key[1])[:11491])
+        MAX=max(K)
+        MIN=min(K)
+        MEAN=np.mean(K)
         for i in range(len(K)):
-            K[i]=(K[i]-MEAN)/(MAX-MIN)
+            a=(K[i]-MEAN)/(MAX-MIN)
+            K[i]=a
         O+=list(K)
     return np.array(O)
     
@@ -83,11 +84,11 @@ def GetGlobalTimeseries(L):
 
 # PARAMETERS:
 # Sliding Step : 2 weeks 
-A=24*7
+A=1
 # Prediction Window: predict 1 week
-B=24*7#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
+B=1#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
 # Base training window: (8 weeks here)
-m =24*7*3
+m =24
 
 #
 #For this data A=24*7 i got this
@@ -165,25 +166,25 @@ class TimeCNN(nn.Module):
         super(TimeCNN, self).__init__()
         #Convolutional Layer 1
         self.layer1 = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=64, kernel_size=2, padding=1),
+            nn.Conv1d(in_channels=1, out_channels=32, kernel_size=2, padding=1),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2)
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=64, out_channels=256, kernel_size=2),
+            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=2),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
 
 ## Try to add convolutinal layers ?        
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=256*8, out_features=256*8)
+        self.fc1 = nn.Linear(in_features=64*8, out_features=64*4)
         #Linear Layer 2
         self.drop=nn.Dropout2d(0.0)
-        self.fc2 = nn.Linear(in_features=256*8, out_features=4*256)
-        self.fc3 = nn.Linear(in_features=4*256, out_features=420)
-        self.fc4 = nn.Linear(in_features=420, out_features=24*7*33)
+        self.fc2 = nn.Linear(in_features=64*4, out_features=2*64)
+        self.fc3 = nn.Linear(in_features=2*64, out_features=64)
+        self.fc4 = nn.Linear(in_features=64, out_features=33)
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
@@ -245,7 +246,7 @@ dsi2Y=listtotY[int(0.9*len(listtotY)):]
 
 mod = TimeCNN()
 loss = torch.nn.MSELoss()
-opt = torch.optim.Adam(mod.parameters(),lr=0.0001)#try 0.0005
+opt = torch.optim.Adam(mod.parameters(),lr=0.0005)#try 0.0005
 xlist = si2X
 #if len(xlist)<10:continue
 ylist = si2Y
@@ -271,7 +272,7 @@ for ep in range(200):
         haty = mod(dsi2X[i].view(1,1,-1))
         lo = loss(haty,dsi2Y[i].view(1,-1))
         lotestset+= lo.item()
-    print("epoch %d loss in training %1.20f mean of loss in training %1.20f loss in test %1.20f mean loss in test %1.20f" % (ep, lotot,lotot/len(xlist), lotestset,lotestset/len(dsi2X)))
+    print("epoch %d loss in training %1.9f mean of loss in training %1.9f loss in test %1.9f mean loss in test %1.9f" % (ep, lotot,lotot/len(xlist), lotestset,lotestset/len(dsi2X)))
 del(mod)
                     
 
