@@ -171,24 +171,24 @@ class TimeCNN(nn.Module):
         super(TimeCNN, self).__init__()
         #Convolutional Layer 1
         self.layer1 = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=32, kernel_size=2, padding=1),
+            nn.Conv1d(in_channels=1, out_channels=10, kernel_size=33, padding=1),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2)
+            nn.MaxPool1d(kernel_size=33, stride=2)
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=2),
+            nn.Conv1d(in_channels=10, out_channels=24, kernel_size=33),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
 
 ## Try to add convolutinal layers ?        
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=64*8, out_features=64*4)
+        self.fc1 = nn.Linear(in_features=24*8, out_features=24*4)
         #Linear Layer 2
-        self.drop=nn.Dropout2d(0.0)
-        self.fc2 = nn.Linear(in_features=64*4, out_features=2*64)
-        self.fc3 = nn.Linear(in_features=2*64, out_features=33)
+        self.drop=nn.Dropout2d(0.2)
+        self.fc2 = nn.Linear(in_features=24*4, out_features=2*24)
+        self.fc3 = nn.Linear(in_features=24*2, out_features=33)
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
@@ -239,12 +239,14 @@ for k in range((11491-B-m)//A):
 listtotX= xlist
 listtotY= ylist
 # Test set
+shuffle(listtotX)
+shuffle(listtotY)
 
-si2X=listtotX[:int(0.9*len(listtotX))]
-si2Y=listtotY[:int(0.9*len(listtotY))]
+si2X=listtotX[:int(0.8*len(listtotX))]
+si2Y=listtotY[:int(0.8*len(listtotY))]
 
-dsi2X =listtotX[int(0.9*len(listtotX)):]
-dsi2Y=listtotY[int(0.9*len(listtotY)):]
+dsi2X =listtotX[int(0.8*len(listtotX)):]
+dsi2Y=listtotY[int(0.8*len(listtotY)):]
 
 mod = TimeCNN()
 loss = torch.nn.MSELoss()
