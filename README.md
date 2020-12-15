@@ -11,20 +11,20 @@ taken every 15 minutes or so.
 
 # Dataset presentation:
 Data was taken from kaggle (https://www.kaggle.com/vinayshanbhag/radar-traffic-data). Traffic data collected from the several Wavetronix radar sensors deployed by the City of Austin. Dataset is augmented with geo coordinates from sensor location dataset.
-Source: https://data.austintexas.gov/. It contains the following features :
-
--Location
--Longitude
--Lattitude
--Direction
--TimeStamp
--DayofWeek
--Minute
--Hour
--Day
--Month
--Year
--Volume
+Source: https://data.austintexas.gov/. 
+It contains the following features :
+- Location
+- Longitude
+- Lattitude
+- Direction
+- TimeStamp
+- DayofWeek
+- Minute
+- Hour
+- Day
+- Month
+- Year
+- Volume
 
 # First Step: Data preprocessing
 In this step, I first rearranged the data by deleting irrelevant columns, I then summed the traffic count over each hour, to simplify the data and thus the model to create.
