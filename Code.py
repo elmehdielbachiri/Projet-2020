@@ -99,6 +99,9 @@ B=1#
 m =24
 # 
 # #
+
+#X0=[0.0241,0.016209,0.0145,0.0135,0.0129,0.0124,0.0120,0.0117,0.0115,0.0113,0.0111,0.0109,0.0107,0.0106,0.0104,0.0103,0.0102,0.0101,0.0100,0.0099,0.0098,0.0097,0.0096,0.0095,0.0094,0.0094,0.0093,0.0092,0.0091,0.0091,0.0090,0.0089,0.0089,0.0088]
+#Y0=[0.0279,0.0251,0.0228,0.0225,0.0230,0.0216,0.0213,0.0212,0.0209,0.0203,0.0202,0.0196,0.0190,0.0204,0.0192,0.0205,0.0192,0.0192,0.0193,0.0190,0.0190,0.0184,0.0188,0.0185,0.0185,0.0185,0.0179,0.0181,0.01788,0.01781]
 # epoch 0 loss in training 221.333390981 mean of loss in training 0.024131421 loss in test 64.110077986 mean loss in test 0.027946852
 # epoch 1 loss in training 148.670976395 mean of loss in training 0.016209221 loss in test 57.730604505 mean loss in test 0.025165913
 # epoch 2 loss in training 133.384240406 mean of loss in training 0.014542547 loss in test 52.436853564 mean loss in test 0.022858262
@@ -130,8 +133,12 @@ m =24
 # epoch 28 loss in training 84.481761430 mean of loss in training 0.009210833 loss in test 42.462293635 mean loss in test 0.018510154
 # epoch 29 loss in training 83.916044442 mean of loss in training 0.009149154 loss in test 41.087451736 mean loss in test 0.017910833
 # epoch 30 loss in training 83.556549465 mean of loss in training 0.009109960 loss in test 41.692256741 mean loss in test 0.018174480
-
- 
+# epoch 31 loss in training 82.917940715 mean of loss in training 0.009040334 loss in test 41.023066421 mean loss in test 0.017882767
+# epoch 32 loss in training 82.378431750 mean of loss in training 0.008981512 loss in test 40.856401861 mean loss in test 0.017810114
+# epoch 33 loss in training 81.887109310 mean of loss in training 0.008927945 loss in test 41.980538444 mean loss in test 0.018300148
+# epoch 34 loss in training 81.576546943 mean of loss in training 0.008894085 loss in test 41.427315020 mean loss in test 0.018058986
+# 
+#  
 
 
 
