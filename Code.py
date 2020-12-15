@@ -12,6 +12,9 @@ from sklearn.cluster import KMeans
 
 data = pd.read_csv('/Users/mac/Desktop/Projet Machine Learning/Data/Radar_Traffic_Counts.csv',sep=',') 
 
+
+### First Step Data Preprocessing (we transform data into hourly time series)
+
 data.drop(['Time Bin'],axis=1,inplace=True)
 date1=data[['Year','Month','Day','Hour']]
 data.drop('Month',axis=1,inplace=True)
@@ -36,14 +39,14 @@ directions=data['Direction'].unique().tolist()
 test = data.loc[data.location_name==names[0]][data.Direction==directions[0]]
 
 COORDdata=data.groupby(by=['location_name','location_latitude','location_longitude','Direction'],as_index=False)['Volume'].count()
-#Pour avoir assez d'entrees
+# To have enough entries we only keep the couples location, direction that verify number of hourly volume values >10 000
 newcouple=COORDdata[COORDdata['Volume']>10000].reset_index()
 keys=[]
 for i in range(len(newcouple)):
     key=(newcouple['location_name'][i],newcouple['Direction'][i])
     keys.append(key)
     
-# After trying a first approach on univariate time that didn't seem to give great results, my second approach consists of defining a model over a multivariate time series (multiple couples (location,Direction) since close locations can have influences on each other in traffic volume)
+# After trying a first approach on univariate time series (for each couple location,direction find a prediction) that didn't seem to give great results, my second approach consists of defining a model over a multivariate time series (multiple couples (location,Direction) since close locations can have influences on each other in traffic volume)
 
 ## First Step : Determining Close Locations based on Longitude and Latitude
 
@@ -57,6 +60,8 @@ LISTlonglati=np.array(LISTlonglati)
 #kmeans = KMeans(n_clusters=2, random_state=0).fit(X)
 #kmeans.labels
 
+# After a step of distance computation it seemed that the max distance between the locations is 17km so this approach is quite relevant
+
 ## location and direction should be strings here
 def GetTimeseries(location,direction):
     tsdata=data.loc[data.location_name==location][data.Direction==direction]
@@ -65,6 +70,9 @@ def GetTimeseries(location,direction):
     #tsdata.plot()
     #plt.show()
     return np.array(tsdata,dtype=np.dtype(float))
+
+
+# here we define a global "time series" by horizantally stacking all the times series over 11491 which represents the min of length of the stacked time series 
 
 def GetGlobalTimeseries(L):
     O=[]
@@ -79,91 +87,55 @@ def GetGlobalTimeseries(L):
         O+=list(K)
     return np.array(O)
     
-#Actually after data crunching, it appears that the max distance between the locations is about 18 km so I decided to feed to the model a multivariate time series.
 
 
-# PARAMETERS:
-# Sliding Step : 2 weeks 
+
+# PARAMETERS: THESE WILL BE VERY IMPORTANT TO DETERMINE RANGES THAT WE GO THROUGH IN THE DATA
+# Sliding Step : 1 hour 
 A=1
-# Prediction Window: predict 1 week
-B=1#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
-# Base training window: (8 weeks here)
+# Prediction Window: predict next hour (for all the locations 33 outputs in the neural network)
+B=1#
+# Base training window: (24 hours here)
 m =24
-
-#
-#For this data A=24*7 i got this
-# # Prediction Window: predict 1 week
-# B=24*7#(Maximum 2 jours pour avoir condition relative aux couches B<128*2=256)
-# # Base training window: (8 weeks here)
-# m =24*28*3
-# with a learning rate of 0.00009
-#
-#self.fc1 = nn.Linear(in_features=256*8, out_features=256*8)       
-#  self.fc2 = nn.Linear(in_features=256*8, out_features=4*256)
-#        self.fc3 = nn.Linear(in_features=4*256, out_features=420)
-#        self.fc4 = nn.Linear(in_features=420, out_features=24*7*33)
-# epoch 0 loss in training 0.471838177  loss in test 0.077578559
-# epoch 1 loss in training 0.423537960  loss in test 0.073999275
-# epoch 2 loss in training 0.416005374  loss in test 0.070573498
-# epoch 3 loss in training 0.409741406  loss in test 0.075812604
-# epoch 4 loss in training 0.408656125  loss in test 0.070852105
-# epoch 5 loss in training 0.401123592  loss in test 0.070285265
-# epoch 6 loss in training 0.380392734  loss in test 0.082435544
-# epoch 7 loss in training 0.355312970  loss in test 0.075832129
-# epoch 8 loss in training 0.347168141  loss in test 0.073185963
-# epoch 9 loss in training 0.332027352  loss in test 0.075729307
-# epoch 10 loss in training 0.324446695  loss in test 0.076210757
-# epoch 11 loss in training 0.308708608  loss in test 0.071809540
-# epoch 12 loss in training 0.297042384  loss in test 0.076490780
-# epoch 13 loss in training 0.291697158  loss in test 0.073425388
-# epoch 14 loss in training 0.280970556  loss in test 0.075504074
-# epoch 15 loss in training 0.268070364  loss in test 0.076505395
-# epoch 16 loss in training 0.257915833  loss in test 0.075552585
-# epoch 17 loss in training 0.249529901  loss in test 0.075845813
-# epoch 18 loss in training 0.245589789  loss in test 0.076318165
-# epoch 19 loss in training 0.228615218  loss in test 0.077533748
-# epoch 20 loss in training 0.224274368  loss in test 0.073901700
-# epoch 21 loss in training 0.220722528  loss in test 0.072185349
-# epoch 22 loss in training 0.210977599  loss in test 0.078165496
-# epoch 23 loss in training 0.203596522  loss in test 0.079721950
-# epoch 24 loss in training 0.198244498  loss in test 0.084685174
-# epoch 25 loss in training 0.197454100  loss in test 0.085641611
-# epoch 26 loss in training 0.191584670  loss in test 0.082541567
-# epoch 27 loss in training 0.189288178  loss in test 0.081371472
-# epoch 28 loss in training 0.185081213  loss in test 0.085814657
-# epoch 29 loss in training 0.181005332  loss in test 0.083859200
-# epoch 30 loss in training 0.183363169  loss in test 0.078149826
-# epoch 31 loss in training 0.178964624  loss in test 0.082515622
-# epoch 32 loss in training 0.177221693  loss in test 0.077932429
-# epoch 33 loss in training 0.175793831  loss in test 0.079448570
-# epoch 34 loss in training 0.171824392  loss in test 0.076258258
-# epoch 35 loss in training 0.171378931  loss in test 0.079578316
-# epoch 36 loss in training 0.168185166  loss in test 0.077745709
-# epoch 37 loss in training 0.167801483  loss in test 0.079506281
-# epoch 38 loss in training 0.166070602  loss in test 0.079108103
-# epoch 39 loss in training 0.165304903  loss in test 0.089499418
-# epoch 40 loss in training 0.162445228  loss in test 0.079746256
-# epoch 41 loss in training 0.159858734  loss in test 0.082297324
-# epoch 42 loss in training 0.159031569  loss in test 0.075542930
-# epoch 43 loss in training 0.160174414  loss in test 0.080739305
-# epoch 44 loss in training 0.156031685  loss in test 0.085205454
-# epoch 45 loss in training 0.156034311  loss in test 0.085262573
-# epoch 46 loss in training 0.155304636  loss in test 0.083840379
-# epoch 47 loss in training 0.152952819  loss in test 0.085320485
-# epoch 48 loss in training 0.149773690  loss in test 0.084390363
-# epoch 49 loss in training 0.146017590  loss in test 0.084415266
-# epoch 50 loss in training 0.143693265  loss in test 0.083015878
-
+# 
+# #
+# epoch 0 loss in training 221.333390981 mean of loss in training 0.024131421 loss in test 64.110077986 mean loss in test 0.027946852
+# epoch 1 loss in training 148.670976395 mean of loss in training 0.016209221 loss in test 57.730604505 mean loss in test 0.025165913
+# epoch 2 loss in training 133.384240406 mean of loss in training 0.014542547 loss in test 52.436853564 mean loss in test 0.022858262
+# epoch 3 loss in training 124.386483121 mean of loss in training 0.013561544 loss in test 51.762438581 mean loss in test 0.022564271
+# epoch 4 loss in training 118.565050375 mean of loss in training 0.012926848 loss in test 52.853466719 mean loss in test 0.023039872
+# epoch 5 loss in training 114.318383842 mean of loss in training 0.012463845 loss in test 49.730500669 mean loss in test 0.021678509
+# epoch 6 loss in training 110.582567063 mean of loss in training 0.012056538 loss in test 48.958620852 mean loss in test 0.021342032
+# epoch 7 loss in training 107.992608879 mean of loss in training 0.011774161 loss in test 48.691610710 mean loss in test 0.021225637
+# epoch 8 loss in training 105.835278420 mean of loss in training 0.011538953 loss in test 48.052927462 mean loss in test 0.020947222
+# epoch 9 loss in training 103.927426717 mean of loss in training 0.011330945 loss in test 46.784571065 mean loss in test 0.020394320
+# epoch 10 loss in training 102.135780208 mean of loss in training 0.011135606 loss in test 46.514949507 mean loss in test 0.020276787
+# epoch 11 loss in training 100.229318773 mean of loss in training 0.010927750 loss in test 47.197454480 mean loss in test 0.020574304
+# epoch 12 loss in training 98.756169510 mean of loss in training 0.010767136 loss in test 45.639828970 mean loss in test 0.019895305
+# epoch 13 loss in training 97.486862930 mean of loss in training 0.010628747 loss in test 46.520865181 mean loss in test 0.020279366
+# epoch 14 loss in training 96.303059712 mean of loss in training 0.010499679 loss in test 45.089780811 mean loss in test 0.019655528
+# epoch 15 loss in training 95.154366519 mean of loss in training 0.010374440 loss in test 43.728359205 mean loss in test 0.019062057
+# epoch 16 loss in training 93.863133689 mean of loss in training 0.010233660 loss in test 46.855021201 mean loss in test 0.020425031
+# epoch 17 loss in training 93.022386499 mean of loss in training 0.010141996 loss in test 44.105041426 mean loss in test 0.019226260
+# epoch 18 loss in training 91.745043340 mean of loss in training 0.010002730 loss in test 47.039255780 mean loss in test 0.020505343
+# epoch 19 loss in training 90.849961996 mean of loss in training 0.009905142 loss in test 44.231947942 mean loss in test 0.019281581
+# epoch 20 loss in training 90.040892264 mean of loss in training 0.009816931 loss in test 44.198303514 mean loss in test 0.019266915
+# epoch 21 loss in training 89.312546569 mean of loss in training 0.009737521 loss in test 44.467598668 mean loss in test 0.019384306
+# epoch 22 loss in training 88.393852283 mean of loss in training 0.009637359 loss in test 43.653075736 mean loss in test 0.019029240
+# epoch 23 loss in training 87.451857317 mean of loss in training 0.009534655 loss in test 43.631733544 mean loss in test 0.019019936
+# epoch 24 loss in training 86.845682766 mean of loss in training 0.009468566 loss in test 42.332912820 mean loss in test 0.018453754
+# epoch 25 loss in training 86.217479718 mean of loss in training 0.009400074 loss in test 43.261572119 mean loss in test 0.018858575
+# epoch 26 loss in training 85.773683547 mean of loss in training 0.009351688 loss in test 42.595937441 mean loss in test 0.018568412
+# epoch 27 loss in training 85.109763443 mean of loss in training 0.009279303 loss in test 42.499135893 mean loss in test 0.018526214
+# epoch 28 loss in training 84.481761430 mean of loss in training 0.009210833 loss in test 42.462293635 mean loss in test 0.018510154
+# epoch 29 loss in training 83.916044442 mean of loss in training 0.009149154 loss in test 41.087451736 mean loss in test 0.017910833
+# epoch 30 loss in training 83.556549465 mean of loss in training 0.009109960 loss in test 41.692256741 mean loss in test 0.018174480
 
  
-#TIMES SERIES avec donnees POUR CHAQUE (Location,Direction,date (donnees chaque heure) 
 
 
 
-## First Model CNN (FOR EACH LOCATION AND DIRECTION GET a prediction from the time series)
-
-##Trace des localisations des donnes pour voir s'il est judicieux de trainer le modele sur toutes les localisations (s'ils sont assez proches pour avoir des influences l'une sur l'autre)
-
+## I used a CNN model
 
 
 class TimeCNN(nn.Module):
@@ -171,24 +143,23 @@ class TimeCNN(nn.Module):
         super(TimeCNN, self).__init__()
         #Convolutional Layer 1
         self.layer1 = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=10, kernel_size=33, padding=1),
+            nn.Conv1d(in_channels=1, out_channels=64, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=33, stride=2)
+            nn.MaxPool1d(kernel_size=3, stride=2)
         )
         #Convolutional layer 2
         self.layer2 = nn.Sequential(
-            nn.Conv1d(in_channels=10, out_channels=24, kernel_size=33),
+            nn.Conv1d(in_channels=64, out_channels=256, kernel_size=3),
             nn.ReLU(),
             nn.AdaptiveMaxPool1d(8)
         )
-
 ## Try to add convolutinal layers ?        
         #Linear Layer 1
-        self.fc1 = nn.Linear(in_features=24*8, out_features=24*4)
+        self.fc1 = nn.Linear(in_features=256*8, out_features=128*8)
         #Linear Layer 2
-        self.drop=nn.Dropout2d(0.2)
-        self.fc2 = nn.Linear(in_features=24*4, out_features=2*24)
-        self.fc3 = nn.Linear(in_features=24*2, out_features=33)
+        self.drop=nn.Dropout2d(0.0)
+        self.fc2 = nn.Linear(in_features=128*8, out_features=128*4)
+        self.fc3 = nn.Linear(in_features=128*4, out_features=33)
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
@@ -201,24 +172,14 @@ class TimeCNN(nn.Module):
 
 
 
-
-
-# if <8 then layer1 outputs L=7/2=3 which fails because layer2 needs L>=4
-#on applique le modele a une seule entree pour voir ce qu'il faut adapter dans un premier lieu
-
-#revoir la normalisation -mean()/max(seq) on all data Module pour normaliser les donner
-# Correlation entre Localisations ?
-# Prediction de toutes les localisations et directions en meme temps (chaque elements du vecteur correspond a une prediction) 
-
-## (chaque propriete prendre en compte les patterns  )
-
+## The dictionary here was used for my first approach of univariate time series
 
 DIC={}
 for i in range(len(keys)):
     DIC[keys[i]]=GetTimeseries(keys[i][0],keys[i][1])
 
 
-
+## Here we apply the model over the defined stack of time series
 
 seq=GetGlobalTimeseries(keys)
 print(seq.shape)
@@ -239,23 +200,29 @@ for k in range((11491-B-m)//A):
 listtotX= xlist
 listtotY= ylist
 # Test set
-shuffle(listtotX)
-shuffle(listtotY)
+#shuffle(listtotX)
+#shuffle(listtotY)
+##
 
+#TRAINING SET
 si2X=listtotX[:int(0.8*len(listtotX))]
 si2Y=listtotY[:int(0.8*len(listtotY))]
 
+#TEST SET (roughly 20%) 
 dsi2X =listtotX[int(0.8*len(listtotX)):]
 dsi2Y=listtotY[int(0.8*len(listtotY)):]
 
+
+Y=[]
+X=[]
+E=[]
 mod = TimeCNN()
 loss = torch.nn.MSELoss()
-opt = torch.optim.Adam(mod.parameters(),lr=0.0005)#try 0.0005
+opt = torch.optim.Adam(mod.parameters(),lr=0.0001)
 xlist = si2X
-#if len(xlist)<10:continue
 ylist = si2Y
 idxtr = list(range(len(xlist)))
-for ep in range(200):
+for ep in range(20):
     shuffle(idxtr)
     lotot=0.
     mod.train()
@@ -277,18 +244,15 @@ for ep in range(200):
         lo = loss(haty,dsi2Y[i].view(1,-1))
         lotestset+= lo.item()
     print("epoch %d loss in training %1.9f mean of loss in training %1.9f loss in test %1.9f mean loss in test %1.9f" % (ep, lotot,lotot/len(xlist), lotestset,lotestset/len(dsi2X)))
+    E.append(ep)
+    X.append(lotot/len(xlist))
+    Y.append(lotestset/len(dsi2X))
+
+plt.plot(E,X,'r--',E,Y,'bs')
+plt.show()
 del(mod)
                     
 
-## Train on both of them (B=24)/(B=1) and Pourcentage au lieu de mean squared error take test set rndomly as well
-
-
-## second CNN model
-
-# FIRST STEP CLUSTERING OF CLOSE ELEMENTS TOGETHER
-
-
-## Second model LSTM 
 
 
 
