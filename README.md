@@ -86,11 +86,9 @@ The first approach consisting of predictions for each couple (location,direction
 training and test sets over the epochs, which showed my model was effective to a certain extent. The major drawback however is that it took a long time to run, which made parameter
 tuning harder.
 
+![Screenshot](Figureloss.png)
 
-
-        
-
-
+My model is slightly overfitting here, but the loss seems to be acceptable, although further improvments would have made the model better,they were hard due to the complexity of data, and the parameters made it hard to find a good compromise. 
 
 
 
